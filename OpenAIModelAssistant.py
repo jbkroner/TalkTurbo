@@ -32,7 +32,6 @@ class OpenAIModelAssistant:
             "model": "gpt-3.5-turbo",
             "messages": messages,
             "temperature": 0.7,
-            "stop": stop,
             "max_tokens": 512,
         }
 
