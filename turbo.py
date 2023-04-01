@@ -38,7 +38,7 @@ secret_prompt = (
 )
 
 chat_context = ChatContext(secret_prompt=secret_prompt)
-assistant = OpenAIModelAssistant(api_key=OPENAI_SECRET_TOKEN)
+assistant = OpenAIModelAssistant()
 
 intents = discord.Intents.default()
 intents.message_content = True

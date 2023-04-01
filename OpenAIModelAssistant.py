@@ -11,8 +11,8 @@ logger.setLevel(logging.INFO)
 
 
 class OpenAIModelAssistant:
-    def __init__(self, api_key: str) -> None:
-        self.api_key = api_key
+    def __init__(self) -> None:
+        return
 
     def query_model(
         self,
@@ -56,6 +56,37 @@ class OpenAIModelAssistant:
     def get_moderation_score(
         self, message: str, openai_secret_key: str
     ) -> Tuple[str, float]:
+        """
+        Sample response from url:
+
+        {
+            "id": "modr-XXXXX",
+            "model": "text-moderation-001",
+            "results": [
+                {
+                "categories": {
+                    "hate": false,
+                    "hate/threatening": false,
+                    "self-harm": false,
+                    "sexual": false,
+                    "sexual/minors": false,
+                    "violence": false,
+                    "violence/graphic": false
+                },
+                "category_scores": {
+                    "hate": 0.18805529177188873,
+                    "hate/threatening": 0.0001250059431185946,
+                    "self-harm": 0.0003706029092427343,
+                    "sexual": 0.0008735615410842001,
+                    "sexual/minors": 0.0007470346172340214,
+                    "violence": 0.0041268812492489815,
+                    "violence/graphic": 0.00023186142789199948
+                },
+                "flagged": false
+                }
+            ]
+            }
+        """
         url = "https://api.openai.com/v1/moderations"
         headers = {"authorization": f"Bearer {openai_secret_key}"}
         payload = {"input": message}
