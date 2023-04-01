@@ -1,5 +1,5 @@
 import nltk
-from typing import List
+from typing import List, Dict, Tuple
 from ChatContext import ChatContext
 
 # Set up logging
@@ -52,3 +52,29 @@ class OpenAIModelAssistant:
             messages.append({"role": message["role"], "content": message["content"]})
         # print(f"formatted messages: {messages}")
         return messages
+
+    def get_moderation_score(
+        self, message: str, openai_secret_key: str
+    ) -> Tuple[str, float]:
+        url = "https://api.openai.com/v1/moderations"
+        headers = {"authorization": f"Bearer {openai_secret_key}"}
+        payload = {"input": message}
+        response = requests.post(url=url, json=payload, headers=headers)
+
+        return self._category_score(response.json())
+
+    def _category_score(self, moderation_response: Dict[str, any]) -> Tuple[str, float]:
+        """
+        parse the results of a response from the moderation endpoint
+        https://platform.openai.com/docs/api-reference/moderations
+
+        returns the name of the max category and the max score
+        """
+        categories = moderation_response["results"][0]["categories"]
+        category_scores = moderation_response["results"][0]["category_scores"]
+
+        for category, is_harmful in categories.items():
+            if is_harmful:
+                return (category, category_scores[category])
+
+        return None, 0.0
