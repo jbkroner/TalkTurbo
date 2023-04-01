@@ -80,6 +80,7 @@ async def turbo(ctx, *, arg):
         await ctx.send(
             "_(turbo's host here: sorry! you need the `turbo` roll to talk to turbo)_"
         )
+        return
 
     # moderation
     max_category, max_score = assistant.get_moderation_score(
