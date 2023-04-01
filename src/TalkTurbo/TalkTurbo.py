@@ -7,8 +7,8 @@ import os
 import requests
 import argparse
 
-from ChatContext import ChatContext
-from OpenAIModelAssistant import OpenAIModelAssistant
+from src.TalkTurbo.ChatContext import ChatContext
+from src.TalkTurbo.OpenAIModelAssistant import OpenAIModelAssistant
 
 from logging import Logger
 
