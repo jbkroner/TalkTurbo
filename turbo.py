@@ -38,7 +38,7 @@ secret_prompt = (
 )
 
 chat_context = ChatContext(secret_prompt=secret_prompt)
-assistant = OpenAIModelAssistant(api_key=OPENAI_SECRET_TOKEN)
+assistant = OpenAIModelAssistant()
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -80,6 +80,19 @@ async def turbo(ctx, *, arg):
         await ctx.send(
             "_(turbo's host here: sorry! you need the `turbo` roll to talk to turbo)_"
         )
+        return
+
+    # moderation
+    max_category, max_score = assistant.get_moderation_score(
+        message=arg, openai_secret_key=OPENAI_SECRET_TOKEN
+    )
+    if max_category:
+        print(
+            f"_(turbos host here: you've breached the content moderation threshold breached - category: {max_category} - score: {max_score}.  Keep it safe and friendly please!)_"
+        )
+        await ctx.send(f"moderation threshold breached - {max_category} - {max_score}")
+        return
+    print(f"moderation score - {max_category} - {max_score}")
 
     # add user message to the context
     chat_context.add_message(content=arg, role="user")
