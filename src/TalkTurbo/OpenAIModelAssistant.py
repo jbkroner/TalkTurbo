@@ -1,6 +1,6 @@
 import nltk
 from typing import List, Dict, Tuple
-from ChatContext import ChatContext
+from src.TalkTurbo.ChatContext import ChatContext
 
 # Set up logging
 import logging

@@ -1,10 +1,10 @@
 import unittest
 from unittest.mock import Mock, patch
-from OpenAIModelAssistant import OpenAIModelAssistant
+from TalkTurbo.OpenAIModelAssistant import OpenAIModelAssistant
 
 
 class TestOpenAIModelAssistant(unittest.TestCase):
-    @patch("OpenAIModelAssistant.requests.post")
+    @patch("TalkTurbo.OpenAIModelAssistant.requests.post")
     def test_get_moderation_score(self, mock_post):
         message = "This is a test message"
         openai_secret_key = "secret"

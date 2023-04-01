@@ -1,6 +1,6 @@
 import unittest
 import nltk
-from ChatContext import ChatContext
+from TalkTurbo.ChatContext import ChatContext
 
 
 class TestChatContext(unittest.TestCase):
