@@ -1,6 +1,6 @@
 import nltk
 from typing import List, Dict, Tuple
-from src.TalkTurbo.ChatContext import ChatContext
+from .ChatContext import ChatContext
 
 # Set up logging
 import logging
@@ -47,7 +47,7 @@ class OpenAIModelAssistant:
 
     def _build_prompt(self, context: ChatContext) -> str:
         messages = []
-        messages.append({"role": "assistant", "content": context.secret_prompt})
+        messages.append({"role": "system", "content": context.secret_prompt})
         for message in context.messages:
             messages.append({"role": message["role"], "content": message["content"]})
         # print(f"formatted messages: {messages}")
