@@ -52,7 +52,6 @@ class TestChatContext(unittest.TestCase):
         self.assertEqual(chat_context.messages[0]["content"], "Hello")
         self.assertEqual(chat_context.messages[1]["content"], "Hi")
 
-    def test_length_in_tokens(self):
         chat_context = ChatContext()
         tokens = chat_context.length_in_tokens("This is a test.")
         self.assertEqual(tokens, 5)
