@@ -35,10 +35,15 @@ Once TalkTurbo is added to your server you can talk to the bot by @ing it or usi
 
 ## Slash Commands
 Slash commands can be used within a Discord server to control the bot.
+
 `/turbo` - talk to turbo!
+
 `/estop` - shut down the bot. use at your discretion if you spot spam, abuse, or other problems. 
+
 `/set_temperature` - set the bots temperature, in range [0, 2.0].
+
 `/set_system_prompt` - set the bot's system prompt
+
 `/clear_context` - clear the bot's context (except for the system prompt)
 
 ## Moderation
