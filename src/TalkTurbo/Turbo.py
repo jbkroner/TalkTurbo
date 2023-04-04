@@ -164,8 +164,10 @@ async def sync(ctx: commands.Context):
     description="shut down the bot.  please use if you spot abuse or at your own discretion",
     guild=discord.Object(id=GUILD_ID),
 )
-async def estop(ctx, reason: str = "no reason given"):
-    await ctx.send(f"hard stopping, cya later! logged reason: {reason}")
+async def estop(interaction: discord.Interaction, reason: str = "no reason given"):
+    await interaction.response.send_message(
+        f"hard stopping, cya later! logged reason: {reason}"
+    )
     sys.exit(1)
 
 
