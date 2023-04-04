@@ -2,6 +2,7 @@ import sys
 import nltk
 import discord
 from discord.ext import commands
+from discord import app_commands
 from dotenv import load_dotenv
 import os
 import argparse
@@ -41,7 +42,6 @@ parser.add_argument(
     help="Max response length in tokens",
     dest="max_response_length",
 )
-
 args = parser.parse_args()
 
 # tokenizer
@@ -51,6 +51,7 @@ nltk.download("punkt")
 load_dotenv()
 DISCORD_SECRET_TOKEN = os.getenv("DISCORD_SECRET_KEY")
 OPENAI_SECRET_TOKEN = os.getenv("OPENAI_SECRET_KEY")
+GUILD_ID = os.getenv("DEV_GUILD_ID")
 
 # load the model assistant
 temperature = 0.7 if args.temperature is None else args.temperature
@@ -87,38 +88,42 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents, logging=logger)
+# client = discord.Client(intents=intents)
 
 
 # events
 @bot.event
 async def on_ready():
-    if args.debug:
-        await bot.change_presence(activity=discord.Game("Debug Mode"))
     print(f"We have logged in as {bot.user}")
 
 
-@bot.command()
-async def turbo(ctx, *, arg):
-    if not discord.utils.get(ctx.author.roles, name="turbo"):
-        await ctx.send(
+@bot.tree.command(
+    name="turbo", description="talk to turbo!", guild=discord.Object(id=GUILD_ID)
+)
+async def turbo(interaction: discord.Interaction, *, query: str):
+    await interaction.response.defer()
+    if not discord.utils.get(interaction.user.roles, name="turbo"):
+        await interaction.response.send_message(
             "_(turbo's host here: sorry! you need the `turbo` roll to talk to turbo)_"
         )
         return
 
     # moderation
     max_category, max_score = OpenAIModelAssistant.get_moderation_score(
-        message=arg, openai_secret_key=OPENAI_SECRET_TOKEN
+        message=query, openai_secret_key=OPENAI_SECRET_TOKEN
     )
     if max_category:
         print(
             f"_(turbos host here: you've breached the content moderation threshold breached - category: {max_category} - score: {max_score}.  Keep it safe and friendly please!)_"
         )
-        await ctx.send(f"moderation threshold breached - {max_category} - {max_score}")
+        await interaction.response.send_message(
+            f"moderation threshold breached - {max_category} - {max_score}"
+        )
         return
     print(f"moderation score - {max_category} - {max_score}")
 
     # add user message to the context
-    chat_context.add_message(content=arg, role="user")
+    chat_context.add_message(content=query, role="user")
 
     # log the debug on context
     print(f"context: {chat_context.messages}")
@@ -128,9 +133,9 @@ async def turbo(ctx, *, arg):
     )
 
     if not args.debug:
-        logger.info(f"attempting to send prompt {arg}")
+        logger.info(f"attempting to send prompt {query}")
         response = assistant.query_model(
-            context=chat_context, prompt=arg, openai_secret_key=OPENAI_SECRET_TOKEN
+            context=chat_context, prompt=query, openai_secret_key=OPENAI_SECRET_TOKEN
         )
 
         turbo_response = (
@@ -142,12 +147,25 @@ async def turbo(ctx, *, arg):
 
         print(f"Response: {turbo_response}")
 
-    await ctx.send(turbo_response["content"])
+    await interaction.followup.send(
+        f"prompt: {query}\n\nturbo: {turbo_response['content']}"
+    )
 
 
 @bot.command()
-async def estop(ctx, arg="no reason given"):
-    await ctx.send(f"hard stopping, cya later! logged reason: {arg}")
+async def sync(ctx: commands.Context):
+    await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
+    await ctx.send("_system: commands synced_")
+    print("commands synced")
+
+
+@bot.tree.command(
+    name="estop",
+    description="shut down the bot.  please use if you spot abuse or at your own discretion",
+    guild=discord.Object(id=GUILD_ID),
+)
+async def estop(ctx, reason: str = "no reason given"):
+    await ctx.send(f"hard stopping, cya later! logged reason: {reason}")
     sys.exit(1)
 
 
