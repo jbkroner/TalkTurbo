@@ -41,8 +41,6 @@ Slash commands can be used within a Discord server to control the bot.
 `/set_system_prompt` - set the bot's system prompt
 `/clear_context` - clear the bot's context (except for the system prompt)
 
-``
-
 ## Moderation
 
 All system prompts and messages sent to Turbo are routed through the [OpenAI Moderation Endpoint](https://platform.openai.com/docs/guides/moderation). If any of the listed categories return as `true` then the message is not passed along to the gpt model and the user is warned.
