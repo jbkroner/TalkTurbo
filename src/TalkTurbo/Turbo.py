@@ -1,8 +1,8 @@
+import random
 import sys
 import nltk
 import discord
 from discord.ext import commands
-from discord import app_commands
 from dotenv import load_dotenv
 import os
 import argparse
@@ -91,34 +91,13 @@ bot = commands.Bot(command_prefix="!", intents=intents, logging=logger)
 # client = discord.Client(intents=intents)
 
 
-# events
-@bot.event
-async def on_ready():
-    print(f"We have logged in as {bot.user}")
-
-
-@bot.tree.command(
-    name="turbo", description="talk to turbo!", guild=discord.Object(id=GUILD_ID)
-)
-async def turbo(interaction: discord.Interaction, *, query: str):
-    await interaction.response.defer()
-    if not discord.utils.get(interaction.user.roles, name="turbo"):
-        await interaction.response.send_message(
-            "_(turbo's host here: sorry! you need the `turbo` roll to talk to turbo)_"
-        )
-        return
-
+def turbo_query_helper(query: str) -> str:
     # moderation
     max_category, max_score = OpenAIModelAssistant.get_moderation_score(
         message=query, openai_secret_key=OPENAI_SECRET_TOKEN
     )
     if max_category:
-        print(
-            f"_(turbos host here: you've breached the content moderation threshold breached - category: {max_category} - score: {max_score}.  Keep it safe and friendly please!)_"
-        )
-        await interaction.response.send_message(
-            f"moderation threshold breached - {max_category} - {max_score}"
-        )
+        return f"_(turbos host here: you've breached the content moderation threshold breached - category: {max_category} - score: {max_score}.  Keep it safe and friendly please!)_"
         return
     print(f"moderation score - {max_category} - {max_score}")
 
@@ -132,24 +111,110 @@ async def turbo(interaction: discord.Interaction, *, query: str):
         "_(turbo's host here: sorry, I'm in debug mode and can't query the model!)_"
     )
 
-    if not args.debug:
-        logger.info(f"attempting to send prompt {query}")
-        response = assistant.query_model(
-            context=chat_context, prompt=query, openai_secret_key=OPENAI_SECRET_TOKEN
-        )
-
-        turbo_response = (
-            "_(turbo's host here: turbo didn't have anything to say :bluefootbooby:)_"
-        )
-        if response:
-            turbo_response = response["choices"][0]["message"]
-            chat_context.add_message(turbo_response["content"], turbo_response["role"])
-
-        print(f"Response: {turbo_response}")
-
-    await interaction.followup.send(
-        f"prompt: {query}\n\nturbo: {turbo_response['content']}"
+    logger.info(f"attempting to send prompt {query}")
+    model_response = assistant.query_model(
+        context=chat_context, prompt=query, openai_secret_key=OPENAI_SECRET_TOKEN
     )
+
+    turbo_response = (
+        "_(turbo's host here: turbo didn't have anything to say :bluefootbooby:)_"
+    )
+    if model_response:
+        turbo_response = model_response["choices"][0]["message"]
+        chat_context.add_message(turbo_response["content"], turbo_response["role"])
+    response = turbo_response["content"]
+
+    print(f"Response: {response}")
+    return response
+
+
+# events
+@bot.event
+async def on_ready():
+    print(f"We have logged in as {bot.user}")
+
+
+@bot.event
+async def on_message(message: discord.Message):
+    if bot.user.mentioned_in(message=message):
+        response = turbo_query_helper(query=message.content)
+        await message.reply(response)
+    else:
+        # sometimes reply on our own (if the message wasn't sent by us!)
+        if message.author != bot.user and random.random() < 0.05:
+            print(message.author)
+            print(bot.user)
+            query = (
+                "Respond to the following text as if it appeared in discord chat."
+                "Do not ask if they have any questions or how you may assist."
+                + message.content
+            )
+            response = turbo_query_helper(query=message.content)
+            await message.reply(response)
+
+
+@bot.tree.command(
+    name="set_temperature",
+    description="set the tempurature for the bot. In range [0, 2.]",
+    guild=discord.Object(id=GUILD_ID),
+)
+async def set_temperature(interaction: discord.Interaction, temp: float = 0.7):
+    assistant.temperature = temp
+    await interaction.response.send_message(
+        f"inference temperature set to {assistant.temperature}"
+    )
+
+
+@bot.tree.command(
+    name="clear_context",
+    description="clear the current context (other than the system prompt)",
+    guild=discord.Object(id=GUILD_ID),
+)
+async def set_temperature(interaction: discord.Interaction):
+    chat_context.messages = []
+    await interaction.response.send_message(f"conversation context cleared")
+
+
+@bot.tree.command(
+    name="set_system_prompt",
+    description="set the system prompt for the bot",
+    guild=discord.Object(id=GUILD_ID),
+)
+async def set_system_prompt(interaction: discord.Interaction, prompt: str):
+    max_category, max_score = OpenAIModelAssistant.get_moderation_score(
+        message=prompt, openai_secret_key=OPENAI_SECRET_TOKEN
+    )
+    if max_category:
+        print(
+            f"_(turbos host here: you've breached the content moderation threshold breached - category: {max_category} - score: {max_score}.  Keep it safe and friendly please!)_"
+        )
+        await interaction.response.send_message(
+            f"moderation threshold breached - {max_category} - {max_score}"
+        )
+        return
+    print(f"moderation score - {max_category} - {max_score}")
+    chat_context.secret_prompt = prompt
+    await interaction.response.send_message(
+        f"secret prompt set to '{chat_context.secret_prompt}'"
+    )
+
+
+@bot.tree.command(
+    name="turbo", description="talk to turbo!", guild=discord.Object(id=GUILD_ID)
+)
+@commands.has_role("turbo")
+async def turbo(interaction: discord.Interaction, *, query: str):
+    await interaction.response.defer()
+    if not discord.utils.get(interaction.user.roles, name="turbo"):
+        await interaction.response.send_message(
+            "_(turbo's host here: sorry! you need the `turbo` roll to talk to turbo)_"
+        )
+        return
+
+    # query the model with the helper method
+    response = turbo_query_helper(query=query)
+
+    await interaction.followup.send(f"**prompt**: {query}\n\n**turbo**: {response}")
 
 
 @bot.command()
