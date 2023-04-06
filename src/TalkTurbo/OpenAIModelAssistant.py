@@ -1,12 +1,10 @@
-import os
+import nltk
 from typing import List, Dict, Tuple
 from .ChatContext import ChatContext
 
 # Set up logging
 import logging
 import requests
-import time
-import base64
 
 logger = logging.getLogger("OpenAIModelAssistant")
 logger.setLevel(logging.INFO)
@@ -64,7 +62,6 @@ class OpenAIModelAssistant:
     def query_dalle(
         self,
         query: str,
-        path: str = f"./dalle_tmp/",
         resolution: str = "small",
         openai_secret_key: str = "",
     ) -> str:
@@ -76,26 +73,8 @@ class OpenAIModelAssistant:
         }
 
         response = requests.post(url=url, json=payload, headers=headers)
-        image_url = response.json()["data"][0]["url"]
-        image_data = requests.get(image_url)
 
-        # update the path
-        path = (
-            path
-            + str(time.time())
-            + "---"
-            + self._safe_encode(string_to_encode=query.replace(" ", ""))
-            + ".png"
-        )
-
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-
-        with open(path, "wb") as f:
-            f.write(image_data.content)
-            f.close()
-
-        return path
+        return response.json()["data"][0]["url"]
 
     def _build_prompt(self, context: ChatContext) -> str:
         messages = []
@@ -104,12 +83,6 @@ class OpenAIModelAssistant:
             messages.append({"role": message["role"], "content": message["content"]})
         print(f"formatted messages: {messages}")
         return messages
-
-    def _safe_encode(self, string_to_encode: str) -> str:
-        input_bytes = string_to_encode.encode("utf-8")
-        encoded_bytes = base64.urlsafe_b64encode(input_bytes)
-        encoded_string = encoded_bytes.decode("utf-8")
-        return encoded_string
 
     @staticmethod
     def get_moderation_score(message: str, openai_secret_key: str) -> Tuple[str, float]:
