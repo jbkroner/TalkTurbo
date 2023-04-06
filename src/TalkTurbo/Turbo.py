@@ -221,12 +221,6 @@ async def turbo(interaction: discord.Interaction, *, query: str):
 async def generate_image(interaction: discord.Interaction, *, query: str):
     await interaction.response.defer(thinking=True)
 
-    # moderate the prompt
-
-    image_url = assistant.query_dalle(
-        query=query, openai_secret_key=OPENAI_SECRET_TOKEN
-    )
-
     max_category, max_score = OpenAIModelAssistant.get_moderation_score(
         message=query, openai_secret_key=OPENAI_SECRET_TOKEN
     )
@@ -236,9 +230,14 @@ async def generate_image(interaction: discord.Interaction, *, query: str):
             f"_(turbo's host here: moderation threshold breached - category: {max_category} - score: {max_score}_"
         )
 
-    print(f"generated image f{image_url} from prompt {query}")
+    # moderate the prompt
+    image_path = assistant.query_dalle(
+        query=query, openai_secret_key=OPENAI_SECRET_TOKEN
+    )
 
-    await interaction.followup.send(image_url)
+    print(f"generated image f{image_path} from prompt {query}")
+
+    await interaction.followup.send(file=discord.File(image_path))
 
 
 @bot.command()
