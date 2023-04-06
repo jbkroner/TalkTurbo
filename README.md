@@ -1,6 +1,6 @@
 # TalkTurbo
 
-TalkTurbo is a lightweight chatbot for Discord that queries the OpenAI GPT 3.5 Turbo model.  TalkTurbo features simple controls for system prompting, context management, response length, and temperature.  It also utilizes the OpenAI Moderation Endpoint to protect your API key from abuse. 
+TalkTurbo is a lightweight chatbot platform for Discord that queries the OpenAI GPT 3.5 Turbo model.  TalkTurbo features simple controls for system prompting, context management, response length, and temperature.  It also utilizes the OpenAI Moderation Endpoint to protect your API key from abuse.   
 
 Once TalkTurbo is added to your server you can talk to the bot by @ing it or using the slash commands.  Occasionally TalkTurbo will respond to messages on its own!
 
@@ -45,6 +45,13 @@ Slash commands can be used within a Discord server to control the bot.
 `/set_system_prompt` - set the bot's system prompt
 
 `/clear_context` - clear the bot's context (except for the system prompt)
+
+## Notes on Context Tracking
+The bot tracks the 'context' of a conversation so that replies stay on topic.  Also included in the context is the system prompt.  Currently the context is set to a max length of 1024 tokens.  During every exchange with the bot the most recent message + response are appended to the context.  If the length goes over the limit then the oldest messages are removed from the context until the context fits within the max allowed length.  The system prompt is never removed from the context. 
+
+If you notice the bot 'forgetting' things you told it is most likely that the relevant messages got bumped out of the bots context.  
+
+The `gpt-3.5-turbo` model supports a context of up to 4096 tokens.  You may increase the max amount if you wish (and you should see improved recall from the bot), just keep in mind that the OpenAI API charges by the token.  In regular usage the context is almost always filled so you can expect a roughly 4* token usage increase if you raise the max allowed tokens to the limit supported by the `gpt-3.5-turbo` model. 
 
 ## Moderation
 
