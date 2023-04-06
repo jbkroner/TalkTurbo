@@ -11,6 +11,12 @@ logger.setLevel(logging.INFO)
 
 
 class OpenAIModelAssistant:
+    DALLE_RESOLUTION = {
+        "small": "256x256",
+        "medium": "512x512",
+        "large": "1024x1024",
+    }
+
     def __init__(
         self, temperature: float = 0.7, max_response_length: int = 100
     ) -> None:
@@ -52,6 +58,23 @@ class OpenAIModelAssistant:
         # print(f"response = {response.json()}")
 
         return response.json()
+
+    def query_dalle(
+        self,
+        query: str,
+        resolution: str = "small",
+        openai_secret_key: str = "",
+    ) -> str:
+        headers = {"authorization": f"Bearer {openai_secret_key}"}
+        url = "https://api.openai.com/v1/images/generations"
+        payload = {
+            "prompt": query,
+            "size": OpenAIModelAssistant.DALLE_RESOLUTION[resolution],
+        }
+
+        response = requests.post(url=url, json=payload, headers=headers)
+
+        return response.json()["data"][0]["url"]
 
     def _build_prompt(self, context: ChatContext) -> str:
         messages = []
