@@ -1,7 +1,4 @@
-import nltk
-
-# init the tokenizer
-nltk.download("punkt")
+import tiktoken
 
 
 class ChatContext:
@@ -15,10 +12,7 @@ class ChatContext:
         self.messages = messages
         self.secret_prompt = secret_prompt
         self.max_tokens = max_tokens
-
-        if not ChatContext._tokenizer_downloaded:
-            nltk.download("punkt")
-            ChatContext._tokenizer_downloaded = True
+        self._encoding = tiktoken.get_encoding("cl100k_base")
 
     def __str__(self) -> str:
         return f"ChatContext(messages={self.messages}, secret_prompt='{self.secret_prompt}', max_tokens={self.max_tokens})"
@@ -51,7 +45,7 @@ class ChatContext:
 
     def length_in_tokens(self, string: str) -> int:
         """Return the number of tokens in a string."""
-        return len(nltk.word_tokenize(string))
+        return len(self._encoding.encode(string))
 
     def to_dict(self) -> dict:
         """Convert the context to a dictionary."""
