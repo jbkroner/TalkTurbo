@@ -1,6 +1,5 @@
 import random
 import sys
-import nltk
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -43,9 +42,6 @@ parser.add_argument(
     dest="max_response_length",
 )
 args = parser.parse_args()
-
-# tokenizer
-nltk.download("punkt")
 
 # load secrets from the .env file
 load_dotenv()
