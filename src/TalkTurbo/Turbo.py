@@ -213,6 +213,34 @@ async def turbo(interaction: discord.Interaction, *, query: str):
     await interaction.followup.send(f"**prompt**: {query}\n\n**turbo**: {response}")
 
 
+@bot.tree.command(
+    name="generate_image",
+    description="generate an image with the dalle model!",
+    guild=discord.Object(id=GUILD_ID),
+)
+async def generate_image(interaction: discord.Interaction, *, query: str):
+    await interaction.response.defer(thinking=True)
+
+    # moderate the prompt
+
+    image_url = assistant.query_dalle(
+        query=query, openai_secret_key=OPENAI_SECRET_TOKEN
+    )
+
+    max_category, max_score = OpenAIModelAssistant.get_moderation_score(
+        message=query, openai_secret_key=OPENAI_SECRET_TOKEN
+    )
+
+    if max_category:
+        await interaction.followup.send(
+            f"_(turbo's host here: moderation threshold breached - category: {max_category} - score: {max_score}_"
+        )
+
+    print(f"generated image f{image_url} from prompt {query}")
+
+    await interaction.followup.send(image_url)
+
+
 @bot.command()
 async def sync(ctx: commands.Context):
     await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
