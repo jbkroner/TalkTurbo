@@ -56,7 +56,6 @@ max_response_length = (
 )
 assistant = OpenAIModelAssistant(
     temperature=temperature,
-    max_response_length=max_response_length,
     min_dalle_timeout_in_seconds=60,
 )
 
