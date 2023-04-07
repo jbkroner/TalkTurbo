@@ -55,7 +55,9 @@ max_response_length = (
     100 if args.max_response_length is None else args.max_response_length
 )
 assistant = OpenAIModelAssistant(
-    temperature=temperature, max_response_length=max_response_length
+    temperature=temperature,
+    max_response_length=max_response_length,
+    min_dalle_timeout_in_seconds=60,
 )
 
 # bot secret prompt
@@ -218,8 +220,24 @@ async def turbo(interaction: discord.Interaction, *, query: str):
     description="generate an image with the dalle model!",
     guild=discord.Object(id=GUILD_ID),
 )
-async def generate_image(interaction: discord.Interaction, *, query: str):
+async def generate_image(
+    interaction: discord.Interaction,
+    *,
+    query: str,
+):
     await interaction.response.defer(thinking=True)
+
+    if not assistant.dalle_timeout_passed():
+        response = turbo_query_helper(
+            "START SYSTEM MESSAGE"
+            "This message is coming from your host server."
+            "The user is trying to generate a dalle image through your host server."
+            "Please concisely inform the user that is not enough time has passed."
+            f"They must this many seconds (feel free to round): {assistant.dalle_timeout_remaining()}"
+            "END SYSTEM MESSAGE"
+        )
+        await interaction.followup.send(content=response)
+        return
 
     max_category, max_score = OpenAIModelAssistant.get_moderation_score(
         message=query, openai_secret_key=OPENAI_SECRET_TOKEN
