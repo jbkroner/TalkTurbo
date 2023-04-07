@@ -40,6 +40,7 @@ class OpenAIModelAssistant:
         max_tokens: int = 100,
         temperature: float = 0.7,
         stop: List[str] = None,
+        hashed_user_identifier: str = None,
         openai_secret_key: str = "",
     ) -> List[str]:
         if stop is None:
@@ -54,6 +55,8 @@ class OpenAIModelAssistant:
             "max_tokens": max_tokens,
             "n": 1,  # number of completions to generatei
         }
+        if hashed_user_identifier:
+            payload["user"] = hashed_user_identifier
 
         response = requests.post(
             url="https://api.openai.com/v1/chat/completions",
@@ -70,6 +73,7 @@ class OpenAIModelAssistant:
         query: str,
         path: str = f"./dalle_tmp/",
         resolution: str = "large",
+        hashed_user_identifier: str = None,
         openai_secret_key: str = "",
     ) -> str:
         headers = {"authorization": f"Bearer {openai_secret_key}"}
@@ -78,6 +82,9 @@ class OpenAIModelAssistant:
             "prompt": query,
             "size": OpenAIModelAssistant.DALLE_RESOLUTION[resolution],
         }
+
+        if hashed_user_identifier:
+            payload["user"] = hashed_user_identifier
 
         response = requests.post(url=url, json=payload, headers=headers)
         image_url = response.json()["data"][0]["url"]
