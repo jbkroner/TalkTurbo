@@ -20,7 +20,9 @@ class OpenAIModelAssistant:
     }
 
     def __init__(
-        self, temperature: float = 0.7, max_response_length: int = 100
+        self,
+        temperature: float = 0.7,
+        min_dalle_timeout_in_seconds: float = 10.0,
     ) -> None:
         if temperature > 2.0 or temperature < 0:
             print(
@@ -28,6 +30,8 @@ class OpenAIModelAssistant:
             )
             temperature = 0.7
         self.temperature = temperature
+        self.min_dalle_timeout_in_seconds = min_dalle_timeout_in_seconds
+        self._last_dalle_gen_time = time.time()
 
     def query_model(
         self,
@@ -48,7 +52,7 @@ class OpenAIModelAssistant:
             "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
-            "n": 1,  # number of completions to generate
+            "n": 1,  # number of completions to generatei
         }
 
         response = requests.post(
@@ -65,7 +69,7 @@ class OpenAIModelAssistant:
         self,
         query: str,
         path: str = f"./dalle_tmp/",
-        resolution: str = "small",
+        resolution: str = "large",
         openai_secret_key: str = "",
     ) -> str:
         headers = {"authorization": f"Bearer {openai_secret_key}"}
@@ -95,6 +99,9 @@ class OpenAIModelAssistant:
             f.write(image_data.content)
             f.close()
 
+        # hit the clock
+        self._last_dalle_gen_time = time.time()
+
         return path
 
     def _build_prompt(self, context: ChatContext) -> str:
@@ -110,6 +117,16 @@ class OpenAIModelAssistant:
         encoded_bytes = base64.urlsafe_b64encode(input_bytes)
         encoded_string = encoded_bytes.decode("utf-8")
         return encoded_string
+
+    def dalle_timeout_passed(self) -> bool:
+        return (
+            True
+            if self.dalle_timeout_remaining() > self.min_dalle_timeout_in_seconds
+            else False
+        )
+
+    def dalle_timeout_remaining(self) -> float:
+        return max(time.time() - self._last_dalle_gen_time, 0.0)
 
     @staticmethod
     def get_moderation_score(message: str, openai_secret_key: str) -> Tuple[str, float]:
