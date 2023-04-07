@@ -30,7 +30,7 @@ if (Test-Path $requirements_file) {
 }
 
 Write-Output "### building TalkTurbo"
-python -m build --no-isolation
+python -m build
 
 Write-Output "uninstalling old versions"
 pip uninstall TalkTurbo
