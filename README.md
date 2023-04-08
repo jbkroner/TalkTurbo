@@ -33,10 +33,16 @@ Once TalkTurbo is added to your server you can talk to the bot by @ing it or usi
 
 `-m` , `--max-response-length` - Max response length in tokens.  Defaults to 100.
 
+`--sync-app-commands` - Sync new or udpated app commands with Discord 
+
+`--no-user-identifier` - do *not* send a user's unique hash to OpenAI with each request. 
+
 ## Slash Commands
 Slash commands can be used within a Discord server to control the bot.
 
 `/turbo` - talk to turbo!
+
+`/generate_image` - enter a prompt and generate a DALL-E image.  Timeout defaults to 60 seconds.
 
 `/estop` - shut down the bot. use at your discretion if you spot spam, abuse, or other problems. 
 
