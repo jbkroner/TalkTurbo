@@ -437,6 +437,7 @@ async def generate_image(
         await interaction.followup.send(
             f"_(turbo's host here: moderation threshold breached - category: {max_category} - score: {max_score}_"
         )
+        logger.info(f"interaction {interaction_id}: resolved")
         return
 
     image_path = assistant.query_dalle(
