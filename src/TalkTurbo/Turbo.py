@@ -9,6 +9,7 @@ import hashlib
 import logging
 from logging import Logger
 from logging.handlers import RotatingFileHandler
+from LoggerGenerator import LoggerGenerator
 
 from TalkTurbo.ChatContext import ChatContext
 from TalkTurbo.OpenAIModelAssistant import OpenAIModelAssistant
@@ -89,37 +90,7 @@ def get_log_level_from_arg(arg: str) -> int:
 log_level = get_log_level_from_arg(args.logging_level)
 
 # logging
-logger = logging.getLogger("Turbo")
-logger.setLevel(log_level)
-
-
-# Create a console handler for output
-console_handler = logging.StreamHandler()
-
-# create a file handler
-max_bytes = 10 * 1024 * 1024  # 10 MB
-backup_count = 5  # Number of backup files to kee
-file_handler = RotatingFileHandler(
-    filename="discord.log",
-    encoding="utf-8",
-    mode="w",
-    maxBytes=max_bytes,
-    backupCount=backup_count,
-)
-
-# Create a formatter for the console handler
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s"
-)
-
-
-console_handler.setFormatter(formatter)
-file_handler.setFormatter(formatter)
-
-# Add the console handler to the logger
-logger.addHandler(console_handler)
-logger.addHandler(file_handler)
-
+logger = LoggerGenerator.create_logger(logger_name="Turbo", log_level=log_level)
 logger.info(f"logging level set to {log_level}")
 
 # load secrets from the .env file
