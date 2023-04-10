@@ -156,10 +156,10 @@ def hash_user_identifier(user_identifier: str) -> str:
 
 
 def turbo_query_helper(
-    query: str, id: str, hashed_user_identifier: str = None, logge: Logger = logger
+    query: str, id: str, hashed_user_identifier: str = None, logger: Logger = logger
 ) -> str:
     logger.info(
-        f"interaction {id} - chat request from {hashed_user_identifier} - {query}"
+        f"interaction {id} - query helper working request from {hashed_user_identifier}"
     )
 
     # moderation
@@ -174,9 +174,7 @@ def turbo_query_helper(
 
     # add user message to the context
     chat_context.add_message(content=query, role="user")
-    logger.debug(
-        f"interaction {id} - context with with new query appended: {chat_context.messages}"
-    )
+    logger.debug(f"interaction {id} - context updated with user query")
 
     turbo_response = (
         "_(turbo's host here: sorry, I'm in debug mode and can't query the model!)_"
@@ -189,6 +187,10 @@ def turbo_query_helper(
         openai_secret_key=OPENAI_SECRET_TOKEN,
     )
 
+    logger.info(
+        f"interaction {id}: received moderation score for query from {hashed_user_identifier}.  Category: {max_category}. Score: {max_score}"
+    )
+
     turbo_response = (
         "_(turbo's host here: turbo didn't have anything to say :bluefootbooby:)_"
     )
@@ -197,7 +199,9 @@ def turbo_query_helper(
         chat_context.add_message(turbo_response["content"], turbo_response["role"])
     response = turbo_response["content"]
 
-    logger.info(f"interaction {id} - response to {hashed_user_identifier}: {response}")
+    logger.info(
+        f"interaction {id} - response to {hashed_user_identifier} received from OpenAI"
+    )
 
     return response
 
@@ -401,6 +405,10 @@ async def generate_image(
         openai_secret_key=OPENAI_SECRET_TOKEN,
     )
 
+    logger.info(
+        f"interaction {interaction_id}: received moderation score for query from {hashed_user_identifier}.  Category: {max_category}. Score: {max_score}"
+    )
+
     if max_category:
         logger.warning(
             f"interaction {interaction_id}: system prompt exceeded content moderation thresholds. category: {max_category}, score: {max_score}"
@@ -417,19 +425,18 @@ async def generate_image(
         hashed_user_identifier=hashed_user_identifier,
     )
 
+    ## DISABLED - until a safer way to log user queries is implemented
     # add the query to the context
-    content = (
-        "START SYSTEM MESSAGE"
-        "This message is coming from your host server."
-        "A user just used your host server to generate a DALL-E image"
-        f"The prompt was {query}"
-        "END SYSTEM MESSAGE"
-    )
-    chat_context.add_message(content=content, role="user")
+    # content = (
+    #     "START SYSTEM MESSAGE"
+    #     "This message is coming from your host server."
+    #     "A user just used your host server to generate a DALL-E image"
+    #     f"The prompt was {query}"
+    #     "END SYSTEM MESSAGE"
+    # )
+    # chat_context.add_message(content=content, role="user")
 
-    logger.info(
-        f"interaction {interaction_id}: generated image {image_path} from prompt {query}.  Conversation context updated."
-    )
+    logger.info(f"interaction {interaction_id}: generated image {image_path}")
 
     await interaction.followup.send(file=discord.File(image_path))
     logger.info(f"interaction {interaction_id}: resolved")
@@ -448,9 +455,7 @@ async def sync(ctx: commands.Context):
     guild=discord.Object(id=GUILD_ID),
 )
 async def estop(interaction: discord.Interaction, reason: str = "no reason given"):
-    await interaction.response.send_message(
-        f"hard stopping, cya later! logged reason: {reason}"
-    )
+    await interaction.response.send_message(f"hard stopping, cya later!")
     sys.exit(1)
 
 
