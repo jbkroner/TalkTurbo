@@ -216,9 +216,9 @@ async def on_ready():
         logger.info("commands synced!")
 
 
-@bot.event
+@bot.listen()
 async def on_message(message: discord.Message):
-    if bot.user.mentioned_in(message=message):
+    if bot.user.mentioned_in(message=message) and not message.author.bot:
         message_id = message.id
         hashed_user_identifier = (
             None
