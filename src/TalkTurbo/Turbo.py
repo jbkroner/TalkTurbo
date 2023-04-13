@@ -8,14 +8,14 @@ import argparse
 import hashlib
 import logging
 from logging import Logger
+from logging.handlers import RotatingFileHandler
+from LoggerGenerator import LoggerGenerator
 
 from TalkTurbo.ChatContext import ChatContext
 from TalkTurbo.OpenAIModelAssistant import OpenAIModelAssistant
 
 
 import discord
-
-logger = Logger(name="TurboLogger", level=logging.INFO)
 
 # command parser
 parser = argparse.ArgumentParser(description="Turbo")
@@ -61,7 +61,37 @@ parser.add_argument(
     dest="no_user_identifiers",
 )
 
+parser.add_argument(
+    "--logging-level",
+    type=str,
+    default="INFO",
+    help="Logging level that gets emitted.  Choose DEBUG, INFO, WARNING, or ERROR.  Defaults to INFO",
+    dest="logging_level",
+)
+
+parser.add_argument(
+    "--dalle-timeout",
+    type=int,
+    default=60,
+    help="dalle timeout in seconds",
+    dest="dalle_timeout",
+)
+
 args = parser.parse_args()
+
+
+def get_log_level_from_arg(arg: str) -> int:
+    log_level = getattr(logging, arg.upper(), None)
+    if not isinstance(log_level, int):
+        raise ValueError(f"Invalid log level: {args.loglevel}")
+    return log_level
+
+
+log_level = get_log_level_from_arg(args.logging_level)
+
+# logging
+logger = LoggerGenerator.create_logger(logger_name="Turbo", log_level=log_level)
+logger.info(f"logging level set to {log_level}")
 
 # load secrets from the .env file
 load_dotenv()
@@ -76,7 +106,7 @@ max_response_length = (
 )
 assistant = OpenAIModelAssistant(
     temperature=temperature,
-    min_dalle_timeout_in_seconds=60,
+    min_dalle_timeout_in_seconds=args.dalle_timeout,
 )
 
 # bot secret prompt
@@ -87,15 +117,20 @@ secret_prompt = (
     "If asked, you are wearing sassy pants."
 )
 if args.system_prompt:
-    print(f"manual system prompt: {args.system_prompt}")
+    logger.info(f"manual system prompt: {args.system_prompt}")
 
     # moderate the system prompt
     max_category, max_score = OpenAIModelAssistant.get_moderation_score(
         message=args.system_prompt, openai_secret_key=OPENAI_SECRET_TOKEN
     )
+    logger.debug(
+        f"manual system prompt moderation results -> category: {max_category}, score: {max_score}"
+    )
 
     if max_category:
-        print(f"user system prompt violates moderation policy, using default")
+        logger.warning(
+            f"user system prompt violates moderation policy, using default.  Category: {max_category}, Score: {max_score}"
+        )
     else:
         secret_prompt = args.system_prompt
 
@@ -104,7 +139,7 @@ chat_context = ChatContext(secret_prompt=secret_prompt)
 intents = discord.Intents.default()
 intents.message_content = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents, log_level=logging.INFO)
 # client = discord.Client(intents=intents)
 
 
@@ -120,20 +155,26 @@ def hash_user_identifier(user_identifier: str) -> str:
     return hashlib.md5(user_identifier.encode()).hexdigest()
 
 
-def turbo_query_helper(query: str, hashed_user_identifier: str = None) -> str:
-    print(f"TURBO - chat request from {hashed_user_identifier} - {query}")
+def turbo_query_helper(
+    query: str, id: str, hashed_user_identifier: str = None, logger: Logger = logger
+) -> str:
+    logger.info(
+        f"interaction {id} - query helper working request from {hashed_user_identifier}"
+    )
+
     # moderation
     max_category, max_score = OpenAIModelAssistant.get_moderation_score(
         message=query, openai_secret_key=OPENAI_SECRET_TOKEN
     )
     if max_category:
+        logger.info(
+            f"interaction {id} - content moderation threshold breached. category: {max_category}, score: {max_score}"
+        )
         return f"_(turbos host here: you've breached the content moderation threshold breached - category: {max_category} - score: {max_score}.  Keep it safe and friendly please!)_"
 
     # add user message to the context
     chat_context.add_message(content=query, role="user")
-
-    # log the debug on context
-    # print(f"context: {chat_context.messages}")
+    logger.debug(f"interaction {id} - context updated with user query")
 
     turbo_response = (
         "_(turbo's host here: sorry, I'm in debug mode and can't query the model!)_"
@@ -146,6 +187,10 @@ def turbo_query_helper(query: str, hashed_user_identifier: str = None) -> str:
         openai_secret_key=OPENAI_SECRET_TOKEN,
     )
 
+    logger.info(
+        f"interaction {id}: received moderation score for query from {hashed_user_identifier}.  Category: {max_category}. Score: {max_score}"
+    )
+
     turbo_response = (
         "_(turbo's host here: turbo didn't have anything to say :bluefootbooby:)_"
     )
@@ -154,7 +199,9 @@ def turbo_query_helper(query: str, hashed_user_identifier: str = None) -> str:
         chat_context.add_message(turbo_response["content"], turbo_response["role"])
     response = turbo_response["content"]
 
-    print(f"TURBO - response to {hashed_user_identifier}: {response}")
+    logger.info(
+        f"interaction {id} - response to {hashed_user_identifier} received from OpenAI"
+    )
 
     return response
 
@@ -162,30 +209,32 @@ def turbo_query_helper(query: str, hashed_user_identifier: str = None) -> str:
 # events
 @bot.event
 async def on_ready():
-    print(f"We have logged in as {bot.user}")
-
-    print(f"TURBO - We have logged in as {bot.user}")
+    logger.info(f"bot logged in as {bot.user}")
     if args.sync_app_commands:
-        print("syncing app commands...")
+        logger.info("syncing app commands...")
         await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
-        print("commands synced!")
+        logger.info("commands synced!")
 
 
-@bot.event
+@bot.listen()
 async def on_message(message: discord.Message):
-    if bot.user.mentioned_in(message=message):
-        response = turbo_query_helper(query=message.content)
+    if bot.user.mentioned_in(message=message) and not message.author.bot:
+        message_id = message.id
+        hashed_user_identifier = (
+            None
+            if args.no_user_identifiers
+            else hash_user_identifier(build_unique_id_from_message(message=message))
+        )
+        logger.info(
+            f"interaction {message_id} (message) (new): received from user identifier {hashed_user_identifier}"
+        )
+        response = turbo_query_helper(
+            query=message.content,
+            id=message_id,
+            hashed_user_identifier=hashed_user_identifier,
+        )
         await message.reply(response)
-    else:
-        # sometimes reply on our own (if the message wasn't sent by us!)
-        if message.author != bot.user and random.random() < 0.05:
-            query = (
-                "Respond to the following text as if it appeared in discord chat."
-                "Do not ask if they have any questions or how you may assist."
-                + message.content
-            )
-            response = turbo_query_helper(query=query)
-            await message.reply(response)
+        logger.info(f"interaction {message_id} (message): resolved")
 
 
 @bot.tree.command(
@@ -194,10 +243,31 @@ async def on_message(message: discord.Message):
     guild=discord.Object(id=GUILD_ID),
 )
 async def set_temperature(interaction: discord.Interaction, temp: float = 0.7):
+    interaction_id = interaction.id
+    hashed_user_identifier = (
+        None
+        if args.no_user_identifiers
+        else hash_user_identifier(
+            build_unique_id_from_interaction(interaction=interaction)
+        )
+    )
+    logger.info(
+        f"interaction {interaction_id}: user {hashed_user_identifier} is trying to set the temp to {temp}"
+    )
+
+    if temp < 0 or temp > 2.0:
+        assistant.temperature = 0.7
+        await interaction.response.send_message(
+            f"temp {temp} not in range [0, 2.0], Setting to default (0.7)"
+        )
+        logger.info(f"interaction {interaction_id}: resolved")
+        return
+
     assistant.temperature = temp
     await interaction.response.send_message(
         f"inference temperature set to {assistant.temperature}"
     )
+    logger.info(f"interaction {interaction_id}: resolved")
 
 
 @bot.tree.command(
@@ -205,9 +275,22 @@ async def set_temperature(interaction: discord.Interaction, temp: float = 0.7):
     description="clear the current context (other than the system prompt)",
     guild=discord.Object(id=GUILD_ID),
 )
-async def set_temperature(interaction: discord.Interaction):
-    chat_context.messages = []
+async def clear_context(interaction: discord.Interaction):
+    interaction_id = interaction.id
+    hashed_user_identifier = (
+        None
+        if args.no_user_identifiers
+        else hash_user_identifier(
+            build_unique_id_from_interaction(interaction=interaction)
+        )
+    )
+    logger.info(
+        f"interaction {interaction_id}: user {hashed_user_identifier} is clearing the conversation context"
+    )
+    assistant.temperature = temperature
+
     await interaction.response.send_message(f"conversation context cleared")
+    logger.info(f"interaction {interaction_id}: resolved")
 
 
 @bot.tree.command(
@@ -216,22 +299,34 @@ async def set_temperature(interaction: discord.Interaction):
     guild=discord.Object(id=GUILD_ID),
 )
 async def set_system_prompt(interaction: discord.Interaction, prompt: str):
+    interaction_id = interaction.id
+    hashed_user_identifier = (
+        None
+        if args.no_user_identifiers
+        else hash_user_identifier(
+            build_unique_id_from_interaction(interaction=interaction)
+        )
+    )
+    logger.info(
+        f"interaction {interaction_id}: user {hashed_user_identifier} is trying to set the system prompt to '{prompt}'"
+    )
     max_category, max_score = OpenAIModelAssistant.get_moderation_score(
         message=prompt, openai_secret_key=OPENAI_SECRET_TOKEN
     )
     if max_category:
-        print(
-            f"_(turbos host here: you've breached the content moderation threshold breached - category: {max_category} - score: {max_score}.  Keep it safe and friendly please!)_"
+        logger.warning(
+            f"interaction {interaction_id}: system prompt exceeded content moderation thresholds. category: {max_category}, score: {max_score}"
         )
         await interaction.response.send_message(
-            f"moderation threshold breached - {max_category} - {max_score}"
+            f"_(host here: moderation threshold breached - {max_category} - {max_score})_"
         )
+        logger.info(f"interaction {interaction_id}: resolved")
         return
-    print(f"moderation score - {max_category} - {max_score}")
     chat_context.secret_prompt = prompt
     await interaction.response.send_message(
         f"secret prompt set to '{chat_context.secret_prompt}'"
     )
+    logger.info(f"interaction {interaction_id}: resolved")
 
 
 @bot.tree.command(
@@ -239,15 +334,18 @@ async def set_system_prompt(interaction: discord.Interaction, prompt: str):
 )
 @commands.has_role("turbo")
 async def turbo(interaction: discord.Interaction, *, query: str):
-    await interaction.response.defer(thinking=True)
-
+    interaction_id = interaction.id
     user_identifier = build_unique_id_from_interaction(interaction=interaction)
     hashed_user_identifier = (
         None
         if args.no_user_identifiers
         else hash_user_identifier(user_identifier=user_identifier)
     )
-    print(f"TURBO - chat request from {hashed_user_identifier} - {query}")
+    logger.info(
+        f"interaction {interaction_id} (new): generated hashed user identifier {hashed_user_identifier}"
+    )
+
+    await interaction.response.defer(thinking=True)
 
     if not discord.utils.get(interaction.user.roles, name="turbo"):
         await interaction.response.send_message(
@@ -257,10 +355,11 @@ async def turbo(interaction: discord.Interaction, *, query: str):
 
     # query the model with the helper method
     response = turbo_query_helper(
-        query=query, hashed_user_identifier=hashed_user_identifier
+        query=query, id=interaction_id, hashed_user_identifier=hashed_user_identifier
     )
 
     await interaction.followup.send(f"**prompt**: {query}\n\n**turbo**: {response}")
+    logger.info(f"interaction {interaction_id}: resolved")
 
 
 @bot.tree.command(
@@ -273,26 +372,32 @@ async def generate_image(
     *,
     query: str,
 ):
-    await interaction.response.defer(thinking=True)
-
+    interaction_id = interaction.id
     user_identifier = build_unique_id_from_interaction(interaction=interaction)
     hashed_user_identifier = (
         None
         if args.no_user_identifiers
         else hash_user_identifier(user_identifier=user_identifier)
     )
-    print(f"TURBO - dalle image request from {hashed_user_identifier}")
+    logger.info(
+        f"interaction {interaction_id} (new): generated hashed user identifier {hashed_user_identifier}.  Image prompt: {query}"
+    )
+    await interaction.response.defer(thinking=True)
 
     if not assistant.dalle_timeout_passed():
+        remaining_time = assistant.dalle_timeout_remaining()
         response = turbo_query_helper(
-            "START SYSTEM MESSAGE"
+            query="START SYSTEM MESSAGE"
             "This message is coming from your host server."
             "The user is trying to generate a dalle image through your host server."
             "Please concisely inform the user that is not enough time has passed."
-            f"They must this many seconds (feel free to round): {assistant.dalle_timeout_remaining()}"
-            "END SYSTEM MESSAGE"
+            f"They must this many seconds (feel free to round): {remaining_time}"
+            "END SYSTEM MESSAGE",
+            id=interaction_id,
+            hashed_user_identifier=hashed_user_identifier,  # this probably should an ADMIN or SYSTEM id
         )
         await interaction.followup.send(content=response)
+        logger.info(f"interaction {interaction_id}: resolved")
         return
 
     max_category, max_score = OpenAIModelAssistant.get_moderation_score(
@@ -300,21 +405,41 @@ async def generate_image(
         openai_secret_key=OPENAI_SECRET_TOKEN,
     )
 
+    logger.info(
+        f"interaction {interaction_id}: received moderation score for query from {hashed_user_identifier}.  Category: {max_category}. Score: {max_score}"
+    )
+
     if max_category:
+        logger.warning(
+            f"interaction {interaction_id}: system prompt exceeded content moderation thresholds. category: {max_category}, score: {max_score}"
+        )
         await interaction.followup.send(
             f"_(turbo's host here: moderation threshold breached - category: {max_category} - score: {max_score}_"
         )
+        logger.info(f"interaction {interaction_id}: resolved")
+        return
 
-    # moderate the prompt
     image_path = assistant.query_dalle(
         query=query,
         openai_secret_key=OPENAI_SECRET_TOKEN,
         hashed_user_identifier=hashed_user_identifier,
     )
 
-    print(f"generated image f{image_path} from prompt {query}")
+    ## DISABLED - until a safer way to log user queries is implemented
+    # add the query to the context
+    # content = (
+    #     "START SYSTEM MESSAGE"
+    #     "This message is coming from your host server."
+    #     "A user just used your host server to generate a DALL-E image"
+    #     f"The prompt was {query}"
+    #     "END SYSTEM MESSAGE"
+    # )
+    # chat_context.add_message(content=content, role="user")
+
+    logger.info(f"interaction {interaction_id}: generated image {image_path}")
 
     await interaction.followup.send(file=discord.File(image_path))
+    logger.info(f"interaction {interaction_id}: resolved")
 
 
 @bot.command()
@@ -330,9 +455,7 @@ async def sync(ctx: commands.Context):
     guild=discord.Object(id=GUILD_ID),
 )
 async def estop(interaction: discord.Interaction, reason: str = "no reason given"):
-    await interaction.response.send_message(
-        f"hard stopping, cya later! logged reason: {reason}"
-    )
+    await interaction.response.send_message(f"hard stopping, cya later!")
     sys.exit(1)
 
 

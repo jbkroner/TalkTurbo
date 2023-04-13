@@ -2,6 +2,20 @@
 
 # simple build script for unix, macos
 
+# create a venv if one does not exist, otherwise activate venv
+VENV_NAME="venv"
+if [ ! -d "$VENV_NAME" ]; then
+    echo "### creating virtual environment"
+    python -m venv "$VENV_NAME"
+fi
+
+echo "### activating virtual environment"
+source "$VENV_NAME/bin/activate"
+
+# install requirements in the venv
+echo "### installing requirements"
+pip install -r requirements.txt
+
 echo "### building TalkTurbo"
 python -m build
 

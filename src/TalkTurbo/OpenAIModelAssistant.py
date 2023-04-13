@@ -116,7 +116,6 @@ class OpenAIModelAssistant:
         messages.append({"role": "system", "content": context.secret_prompt})
         for message in context.messages:
             messages.append({"role": message["role"], "content": message["content"]})
-        print(f"formatted messages: {messages}")
         return messages
 
     def _safe_encode(self, string_to_encode: str) -> str:
