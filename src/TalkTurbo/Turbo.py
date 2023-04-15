@@ -10,12 +10,15 @@ import logging
 from logging import Logger
 from logging.handlers import RotatingFileHandler
 from LoggerGenerator import LoggerGenerator
+from typing import Dict
 
 from TalkTurbo.ChatContext import ChatContext
 from TalkTurbo.OpenAIModelAssistant import OpenAIModelAssistant
 
 
 import discord
+
+from TurboGuild import TurboGuild
 
 # command parser
 parser = argparse.ArgumentParser(description="Turbo")
@@ -142,6 +145,9 @@ intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents, log_level=logging.INFO)
 # client = discord.Client(intents=intents)
 
+# mapping guild id to a TurboGuild instance
+turbo_guild_map: Dict[int, TurboGuild] = {}
+
 
 def build_unique_id_from_interaction(interaction: discord.Interaction) -> str:
     return f"{interaction.guild.id}-{interaction.user.id}"
@@ -155,8 +161,25 @@ def hash_user_identifier(user_identifier: str) -> str:
     return hashlib.md5(user_identifier.encode()).hexdigest()
 
 
+def get_turbo_guild(id: int) -> TurboGuild:
+    """
+    Retrieve the interacting guild.  If the guild does not exist it will be created and added to the map.
+    """
+    turbo_guild = turbo_guild_map.get(id)
+
+    if not turbo_guild:
+        turbo_guild = TurboGuild(id=id)
+        turbo_guild_map[id] = turbo_guild
+
+    return turbo_guild
+
+
 def turbo_query_helper(
-    query: str, id: str, hashed_user_identifier: str = None, logger: Logger = logger
+    query: str,
+    id: str,
+    turbo_guild: TurboGuild,
+    hashed_user_identifier: str = None,
+    logger: Logger = logger,
 ) -> str:
     logger.info(
         f"interaction {id} - query helper working request from {hashed_user_identifier}"
@@ -173,7 +196,7 @@ def turbo_query_helper(
         return f"_(turbos host here: you've breached the content moderation threshold breached - category: {max_category} - score: {max_score}.  Keep it safe and friendly please!)_"
 
     # add user message to the context
-    chat_context.add_message(content=query, role="user")
+    turbo_guild.chat_context.add_message(content=query, role="user")
     logger.debug(f"interaction {id} - context updated with user query")
 
     turbo_response = (
@@ -181,7 +204,7 @@ def turbo_query_helper(
     )
 
     model_response = assistant.query_model(
-        context=chat_context,
+        context=turbo_guild.chat_context,
         prompt=query,
         hashed_user_identifier=hashed_user_identifier,
         openai_secret_key=OPENAI_SECRET_TOKEN,
@@ -196,7 +219,9 @@ def turbo_query_helper(
     )
     if model_response:
         turbo_response = model_response["choices"][0]["message"]
-        chat_context.add_message(turbo_response["content"], turbo_response["role"])
+        turbo_guild.chat_context.add_message(
+            turbo_response["content"], turbo_response["role"]
+        )
     response = turbo_response["content"]
 
     logger.info(
@@ -219,6 +244,10 @@ async def on_ready():
 @bot.listen()
 async def on_message(message: discord.Message):
     if bot.user.mentioned_in(message=message) and not message.author.bot:
+        turbo_guild = get_turbo_guild(id=message.guild.id)
+
+        logger.debug(turbo_guild.id)
+
         message_id = message.id
         hashed_user_identifier = (
             None
@@ -231,7 +260,11 @@ async def on_message(message: discord.Message):
         response = turbo_query_helper(
             query=message.content,
             id=message_id,
+            turbo_guild=turbo_guild,
             hashed_user_identifier=hashed_user_identifier,
+        )
+        logger.debug(
+            f"interaction {message_id} (message): guild {turbo_guild.id} context is {turbo_guild.chat_context.messages}"
         )
         await message.reply(response)
         logger.info(f"interaction {message_id} (message): resolved")
@@ -299,6 +332,7 @@ async def clear_context(interaction: discord.Interaction):
     guild=discord.Object(id=GUILD_ID),
 )
 async def set_system_prompt(interaction: discord.Interaction, prompt: str):
+    turbo_guild = get_turbo_guild(id=interaction.guild.id)
     interaction_id = interaction.id
     hashed_user_identifier = (
         None
@@ -322,7 +356,7 @@ async def set_system_prompt(interaction: discord.Interaction, prompt: str):
         )
         logger.info(f"interaction {interaction_id}: resolved")
         return
-    chat_context.secret_prompt = prompt
+    turbo_guild.chat_context.secret_prompt = prompt
     await interaction.response.send_message(
         f"secret prompt set to '{chat_context.secret_prompt}'"
     )
@@ -347,6 +381,8 @@ async def turbo(interaction: discord.Interaction, *, query: str):
 
     await interaction.response.defer(thinking=True)
 
+    turbo_guild = get_turbo_guild(id=interaction.guild.id)
+
     if not discord.utils.get(interaction.user.roles, name="turbo"):
         await interaction.response.send_message(
             "_(turbo's host here: sorry! you need the `turbo` roll to talk to turbo)_"
@@ -355,7 +391,10 @@ async def turbo(interaction: discord.Interaction, *, query: str):
 
     # query the model with the helper method
     response = turbo_query_helper(
-        query=query, id=interaction_id, hashed_user_identifier=hashed_user_identifier
+        query=query,
+        id=interaction_id,
+        turbo_guild=turbo_guild,
+        hashed_user_identifier=hashed_user_identifier,
     )
 
     await interaction.followup.send(f"**prompt**: {query}\n\n**turbo**: {response}")
@@ -434,7 +473,7 @@ async def generate_image(
     #     f"The prompt was {query}"
     #     "END SYSTEM MESSAGE"
     # )
-    # chat_context.add_message(content=content, role="user")
+    # turbo_guild.chat_context.add_message(content=content, role="user")
 
     logger.info(f"interaction {interaction_id}: generated image {image_path}")
 
