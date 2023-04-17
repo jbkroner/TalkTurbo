@@ -11,8 +11,10 @@ from logging import Logger
 from logging.handlers import RotatingFileHandler
 from LoggerGenerator import LoggerGenerator
 from typing import Dict
+from datetime import datetime
 
 from TalkTurbo.ChatContext import ChatContext
+from TalkTurbo.Metering.TurboInteraction import TurboInteraction
 from TalkTurbo.OpenAIModelAssistant import OpenAIModelAssistant
 
 
@@ -218,11 +220,29 @@ def turbo_query_helper(
         "_(turbo's host here: turbo didn't have anything to say :bluefootbooby:)_"
     )
     if model_response:
-        turbo_response = model_response["choices"][0]["message"]
+        turbo_response = model_response.choices[0].message
         turbo_guild.chat_context.add_message(
-            turbo_response["content"], turbo_response["role"]
+            turbo_response.content, turbo_response.role
         )
-    response = turbo_response["content"]
+    response = turbo_response.content
+
+    # update usage for guild
+    turbo_interaction = TurboInteraction(
+        interaction_id=id,
+        interaction_time=datetime.now(),
+        guild_id=turbo_guild.id,
+        hashed_user_identifier=hashed_user_identifier,
+        prompt_tokens_used=model_response.usage.prompt_tokens,
+        completion_tokens_used=model_response.usage.completion_tokens,
+    )
+    turbo_guild.meter.add_interaction(interaction=turbo_interaction)
+    logger.debug(
+        f"interaction {id} - guild {turbo_guild.id} - added turbo_interaction {turbo_interaction.interaction_id} to meter"
+    )
+
+    logger.debug(
+        f"interaction {id} - guild {turbo_guild.id} usage is {turbo_guild.messages_sent} messages"
+    )
 
     logger.info(
         f"interaction {id} - response to {hashed_user_identifier} received from OpenAI"
