@@ -1,6 +1,7 @@
 import os
 from typing import List, Dict, Tuple
 from .ChatContext import ChatContext
+from TalkTurbo.ModelResponses.ChatCompletionResponse import ChatCompletionResponse
 
 # Set up logging
 import logging
@@ -42,7 +43,7 @@ class OpenAIModelAssistant:
         stop: List[str] = None,
         hashed_user_identifier: str = None,
         openai_secret_key: str = "",
-    ) -> List[str]:
+    ) -> ChatCompletionResponse | None:
         if stop is None:
             stop = ["\n"]
 
@@ -53,7 +54,7 @@ class OpenAIModelAssistant:
             "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
-            "n": 1,  # number of completions to generatei
+            "n": 1,  # number of completions to generate
         }
         if hashed_user_identifier:
             payload["user"] = hashed_user_identifier
@@ -64,9 +65,9 @@ class OpenAIModelAssistant:
             json=payload,
         )
 
-        # print(f"response = {response.json()}")
-
-        return response.json()
+        if response.status_code != 200:
+            return None
+        return ChatCompletionResponse.from_dict(data=response.json())
 
     def query_dalle(
         self,
