@@ -433,6 +433,7 @@ async def generate_image(
 ):
     interaction_id = interaction.id
     user_identifier = build_unique_id_from_interaction(interaction=interaction)
+    turbo_guild = turbo_guild_map.get(interaction.guild.id)
     hashed_user_identifier = (
         None
         if args.no_user_identifiers
@@ -494,6 +495,16 @@ async def generate_image(
     #     "END SYSTEM MESSAGE"
     # )
     # turbo_guild.chat_context.add_message(content=content, role="user")
+
+    turbo_interaction = TurboInteraction(
+        interaction_id=id,
+        interaction_time=datetime.now(),
+        guild_id=turbo_guild.id,
+        hashed_user_identifier=hashed_user_identifier,
+        prompt_tokens_used=0,  # Dall-E does not bill by tokens used
+        completion_tokens_used=0,
+        isDalle=True,
+    )
 
     logger.info(f"interaction {interaction_id}: generated image {image_path}")
 
