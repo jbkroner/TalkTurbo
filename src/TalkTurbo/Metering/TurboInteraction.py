@@ -24,3 +24,14 @@ class TurboInteraction:
         self.prompt_tokens_used = prompt_tokens_used
         self.completion_tokens_used = completion_tokens_used
         self.isDalle = False
+
+    def __str__(self) -> str:
+        return (
+             f"interaction_id: {self.interaction_id}"
+             f"interaction_time: {self.interaction_time}"
+             f"guild_id: {self.guild_id}"
+             f"hashed_user_identifer: {self.hashed_user_identifier}"
+             f"prompt_tokens_used: {self.prompt_tokens_used}"
+             f"completion_tokens_used: {self.completion_tokens_used}"
+             f"isDalle: {self.isDalle}"
+        )
