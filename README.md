@@ -35,7 +35,9 @@ Once TalkTurbo is added to your server you can talk to the bot by @ing it or usi
 
 `--sync-app-commands` - Sync new or udpated app commands with Discord 
 
-`--no-user-identifier` - do *not* send a user's unique hash to OpenAI with each request. 
+`--no-user-identifier` - Do *not* send a user's unique hash to OpenAI with each request. 
+
+`--disable-image-storage` - Do not store dalle images locally.  Image prompts and hashes may still be logged. 
 
 ## Slash Commands
 Slash commands can be used within a Discord server to control the bot.
