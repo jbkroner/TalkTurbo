@@ -35,13 +35,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "TalkTurbo"
-version = "0.0.6"
+version = "0.0.7"
 authors = [
   {name = "James Kroner", email = "contactmeongithubplease@example.com"},
 ]
 description = "A lightweight and context managed LLM chatbot for Discord"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",

@@ -2,19 +2,19 @@
 
 TalkTurbo is a lightweight chatbot platform for Discord that queries the OpenAI GPT 3.5 Turbo model.  TalkTurbo features simple controls for system prompting, context management, response length, and temperature.  It also utilizes the OpenAI Moderation Endpoint to protect your API key from abuse.   
 
-Once TalkTurbo is added to your server you can talk to the bot by @ing it or using the slash commands.  Occasionally TalkTurbo will respond to messages on its own!
+Once TalkTurbo is added to your server you can talk to the bot by @ing it or using the slash commands.
 
 ## Usage
 - Clone this repo and `cd` into it.
 - Setup a Discord App+Bot in the [Discord Developer Portal](https://discord.com/developers/docs/intro) + aquire the bot's key.  The [Discord.py docs](https://discordpy.readthedocs.io/en/stable/discord.html) have a good writeup on this.  
 - Aquire an [OpenAI API key](https://platform.openai.com/account/api-keys). 
-- Windows:
-  - create a `.env` in the `TurboTalk` directory and add the following to it:
+- Store environment vars in a `.env` file:
+  - Create a `.env` file in the `TalkTurbo` directory and add the following to it:
     ```
     DISCORD_SECRET_KEY=<discord_secret_key>
     OPENAI_SECRET_KEY=<openai_secret_key>
     ```  
-- Linux / MacOS:
+- Alternatively:
     - Export your keys as enviroment vars:
         - `$ export DISCORD_SECRET_KEY=<discord_secret_key>`
         - `$ export OPENAI_SECRET_KEY=<openai_secret_key>`
@@ -22,6 +22,14 @@ Once TalkTurbo is added to your server you can talk to the bot by @ing it or usi
 - Run the bot:
     - Windows: `> python ./src/TurboTalk/turbo.py`
     - Linux / MacOS: `$ python3 ./src/TurboTalk/turbo.py`
+
+## Run with Docker
+The docker image is not currently distributed on the Docker hub but it is easy to build locally.
+- Install docker on your machine.
+- Clone this repo and `cd` into it. 
+- Build the container: `docker build -t turbo .`
+- Run the container: `docker run -d --env-file .env turbo`
+
 
 ## Args
 

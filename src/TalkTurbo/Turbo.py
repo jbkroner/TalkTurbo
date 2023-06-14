@@ -104,7 +104,7 @@ logger.info(f"logging level set to {log_level}")
 load_dotenv()
 DISCORD_SECRET_TOKEN = os.getenv("DISCORD_SECRET_KEY")
 OPENAI_SECRET_TOKEN = os.getenv("OPENAI_SECRET_KEY")
-GUILD_ID = os.getenv("DEV_GUILD_ID")
+GUILD_ID = os.getenv("GUILD_ID")
 
 # load the model assistant
 temperature = 0.7 if args.temperature is None else args.temperature
