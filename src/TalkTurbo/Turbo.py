@@ -109,7 +109,6 @@ logger.info(f"logging level set to {log_level}")
 load_dotenv()
 DISCORD_SECRET_TOKEN = os.getenv("DISCORD_SECRET_KEY")
 OPENAI_SECRET_TOKEN = os.getenv("OPENAI_SECRET_KEY")
-GUILD_ID = os.getenv("GUILD_ID")
 
 # load the model assistant
 temperature = 0.7 if args.temperature is None else args.temperature
@@ -271,11 +270,6 @@ async def on_message(message: discord.Message):
 
         logger.debug(turbo_guild.id)
 
-        # catch a special message and use it to sync commands in this server
-        if message.content == f"!sync}":
-            await bot.tree.sync(guild=discord.Object(id=turbo_guild.id))
-            await message.reply("(_system message: commands synced in this guild_)")
-
         message_id = message.id
         hashed_user_identifier = (
             None
@@ -301,7 +295,6 @@ async def on_message(message: discord.Message):
 @bot.tree.command(
     name="set_temperature",
     description="set the tempurature for the bot. In range [0, 2.]",
-    guild=discord.Object(id=GUILD_ID),
 )
 async def set_temperature(interaction: discord.Interaction, temp: float = 0.7):
     interaction_id = interaction.id
@@ -334,7 +327,6 @@ async def set_temperature(interaction: discord.Interaction, temp: float = 0.7):
 @bot.tree.command(
     name="clear_context",
     description="clear the current context (other than the system prompt)",
-    guild=discord.Object(id=GUILD_ID),
 )
 async def clear_context(interaction: discord.Interaction):
     interaction_id = interaction.id
@@ -357,7 +349,6 @@ async def clear_context(interaction: discord.Interaction):
 @bot.tree.command(
     name="set_system_prompt",
     description="set the system prompt for the bot",
-    guild=discord.Object(id=GUILD_ID),
 )
 async def set_system_prompt(interaction: discord.Interaction, prompt: str):
     turbo_guild = get_turbo_guild(id=interaction.guild.id)
@@ -392,47 +383,8 @@ async def set_system_prompt(interaction: discord.Interaction, prompt: str):
 
 
 @bot.tree.command(
-    name="turbo", description="talk to turbo!", guild=discord.Object(id=GUILD_ID)
-)
-@commands.has_role("turbo")
-async def turbo(interaction: discord.Interaction, *, query: str):
-    interaction_id = interaction.id
-    user_identifier = build_unique_id_from_interaction(interaction=interaction)
-    hashed_user_identifier = (
-        None
-        if args.no_user_identifiers
-        else hash_user_identifier(user_identifier=user_identifier)
-    )
-    logger.info(
-        f"interaction {interaction_id} (new): generated hashed user identifier {hashed_user_identifier}"
-    )
-
-    await interaction.response.defer(thinking=True)
-
-    turbo_guild = get_turbo_guild(id=interaction.guild.id)
-
-    if not discord.utils.get(interaction.user.roles, name="turbo"):
-        await interaction.response.send_message(
-            "_(turbo's host here: sorry! you need the `turbo` roll to talk to turbo)_"
-        )
-        return
-
-    # query the model with the helper method
-    response = turbo_query_helper(
-        query=query,
-        id=interaction_id,
-        turbo_guild=turbo_guild,
-        hashed_user_identifier=hashed_user_identifier,
-    )
-
-    await interaction.followup.send(f"**prompt**: {query}\n\n**turbo**: {response}")
-    logger.info(f"interaction {interaction_id}: resolved")
-
-
-@bot.tree.command(
     name="generate_image",
     description="generate an image with the dalle model!",
-    guild=discord.Object(id=GUILD_ID),
 )
 async def generate_image(
     interaction: discord.Interaction,
@@ -530,7 +482,7 @@ async def generate_image(
 
 @bot.command()
 async def sync(ctx: commands.Context):
-    await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
+    await bot.tree.sync()
     await ctx.send("_system: commands synced_")
     print("commands synced")
 
@@ -538,7 +490,6 @@ async def sync(ctx: commands.Context):
 @bot.tree.command(
     name="estop",
     description="shut down the bot.  please use if you spot abuse or at your own discretion",
-    guild=discord.Object(id=GUILD_ID),
 )
 async def estop(interaction: discord.Interaction, reason: str = "no reason given"):
     await interaction.response.send_message(f"hard stopping, cya later!")
