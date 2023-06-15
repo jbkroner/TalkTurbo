@@ -82,6 +82,13 @@ parser.add_argument(
     dest="dalle_timeout",
 )
 
+parser.add_argument(
+    "--disable-image-storage",
+    action="store_true",
+    help="Do not store generated Dalle images.  Image hash and user identifier may still be logged elsewhere.",
+    dest="disable_image_storage",
+)
+
 args = parser.parse_args()
 
 
@@ -102,7 +109,7 @@ logger.info(f"logging level set to {log_level}")
 load_dotenv()
 DISCORD_SECRET_TOKEN = os.getenv("DISCORD_SECRET_KEY")
 OPENAI_SECRET_TOKEN = os.getenv("OPENAI_SECRET_KEY")
-GUILD_ID = os.getenv("DEV_GUILD_ID")
+GUILD_ID = os.getenv("GUILD_ID")
 
 # load the model assistant
 temperature = 0.7 if args.temperature is None else args.temperature
@@ -509,6 +516,14 @@ async def generate_image(
     logger.info(f"interaction {interaction_id}: generated image {image_path}")
 
     await interaction.followup.send(file=discord.File(image_path))
+
+    # clean up dalle file if requested
+    if args.disable_image_storage:
+        os.remove(path=image_path)
+        logger.info(
+            f"interaction {interaction_id}: unlinking image stored at {image_path}"
+        )
+
     logger.info(f"interaction {interaction_id}: resolved")
 
 
