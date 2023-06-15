@@ -376,8 +376,11 @@ async def set_system_prompt(interaction: discord.Interaction, prompt: str):
         logger.info(f"interaction {interaction_id}: resolved")
         return
     turbo_guild.chat_context.secret_prompt = prompt
+    logger.debug(
+        f"interaction {interaction_id}: guild {turbo_guild.id} secret prompt set to {turbo_guild.chat_context.secret_prompt}"
+    )
     await interaction.response.send_message(
-        f"secret prompt set to '{chat_context.secret_prompt}'"
+        f"secret prompt set to '{turbo_guild.chat_context.secret_prompt}'"
     )
     logger.info(f"interaction {interaction_id}: resolved")
 
