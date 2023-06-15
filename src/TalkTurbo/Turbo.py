@@ -177,7 +177,7 @@ def get_turbo_guild(id: int) -> TurboGuild:
     turbo_guild = turbo_guild_map.get(id)
 
     if not turbo_guild:
-        turbo_guild = TurboGuild(id=id)
+        turbo_guild = TurboGuild(id=id, logger=logger)
         turbo_guild_map[id] = turbo_guild
 
     return turbo_guild
