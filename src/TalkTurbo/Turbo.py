@@ -262,10 +262,6 @@ def turbo_query_helper(
 @bot.event
 async def on_ready():
     logger.info(f"bot logged in as {bot.user}")
-    if args.sync_app_commands:
-        logger.info("syncing app commands...")
-        await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
-        logger.info("commands synced!")
 
 
 @bot.listen()
@@ -274,6 +270,11 @@ async def on_message(message: discord.Message):
         turbo_guild = get_turbo_guild(id=message.guild.id)
 
         logger.debug(turbo_guild.id)
+
+        # catch a special message and use it to sync commands in this server
+        if message.content == f"!sync}":
+            await bot.tree.sync(guild=discord.Object(id=turbo_guild.id))
+            await message.reply("(_system message: commands synced in this guild_)")
 
         message_id = message.id
         hashed_user_identifier = (
