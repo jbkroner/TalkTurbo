@@ -241,7 +241,7 @@ def turbo_query_helper(
         prompt_tokens_used=model_response.usage.prompt_tokens,
         completion_tokens_used=model_response.usage.completion_tokens,
     )
-    turbo_guild.meter.add_interaction(interaction=turbo_interaction)
+    turbo_guild.update_meter(interaction=turbo_interaction)
     logger.debug(
         f"interaction {id} - guild {turbo_guild.id} - added turbo_interaction {turbo_interaction.interaction_id} to meter"
     )
@@ -417,6 +417,7 @@ async def generate_image(
             f"They must this many seconds (feel free to round): {remaining_time}"
             "END SYSTEM MESSAGE",
             id=interaction_id,
+            turbo_guild=turbo_guild,
             hashed_user_identifier=hashed_user_identifier,  # this probably should an ADMIN or SYSTEM id
         )
         await interaction.followup.send(content=response)
@@ -468,6 +469,8 @@ async def generate_image(
         completion_tokens_used=0,
         isDalle=True,
     )
+
+    turbo_guild.update_meter(interaction=turbo_interaction)
 
     logger.info(f"interaction {interaction_id}: generated image {image_path}")
 
