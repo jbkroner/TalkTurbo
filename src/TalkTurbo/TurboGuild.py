@@ -25,4 +25,5 @@ class TurboGuild:
         self.logger.debug(
             f"guild {self.id}: debug interaction info ->\n{str(interaction)}"
         )
+        self.logger.debug(f"guild {self.id} usage:\n{str(self.meter)}")
         self.meter.add_interaction(interaction=interaction)
