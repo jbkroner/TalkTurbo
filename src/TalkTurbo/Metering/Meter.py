@@ -18,3 +18,29 @@ class Meter:
             )
 
         self.interactions_log[interaction.interaction_id] = interaction
+
+    def total_prompt_tokens(self) -> int:
+        return sum(
+            interaction.prompt_tokens_used
+            for interaction in self.interactions_log.values()
+        )
+
+    def total_completion_tokens(self) -> int:
+        return sum(
+            interaction.completion_tokens_used
+            for interaction in self.interactions_log.values()
+        )
+
+    def total_dalle_images(self) -> int:
+        return sum(
+            interaction.isDalle for interaction in self.interactions_log.values()
+        )
+
+    def __str__(self) -> str:
+        return (
+            f"guild_id: {self.guild_id}, "
+            f"total interactions: {len(self.interactions_log)}, "
+            f"total prompt tokens: {self.total_prompt_tokens()}, "
+            f"total completion tokens: {self.total_completion_tokens()}, "
+            f"total dalle images: {self.total_dalle_images()}"
+        )
