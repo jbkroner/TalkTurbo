@@ -76,6 +76,10 @@ class OpenAIModelAssistant:
         hashed_user_identifier: str = None,
         openai_secret_key: str = "",
     ) -> str:
+        """
+        generate an image with dalle. 
+        return a path to a generated image or None if that fails
+        """
         headers = {"authorization": f"Bearer {openai_secret_key}"}
         url = "https://api.openai.com/v1/images/generations"
         payload = {
@@ -87,8 +91,13 @@ class OpenAIModelAssistant:
             payload["user"] = hashed_user_identifier
 
         response = requests.post(url=url, json=payload, headers=headers)
-        image_url = response.json()["data"][0]["url"]
+        try:
+            image_url = response.json()["data"][0]["url"]
+        except KeyError:
+            return None
+
         image_data = requests.get(image_url)
+
 
         # update the path
         path = (
@@ -141,7 +150,12 @@ class OpenAIModelAssistant:
         payload = {"input": message}
         response = requests.post(url=url, json=payload, headers=headers)
 
-        return OpenAIModelAssistant._category_score(response.json())
+        try:
+            category, category_score = OpenAIModelAssistant._category_score(response.json())
+        except KeyError as e:
+            return None, 0.0 # naive guard against a bad response
+
+        return category, category_score
 
     @staticmethod
     def _category_score(moderation_response: Dict[str, any]) -> Tuple[str, float]:
