@@ -202,9 +202,13 @@ def turbo_query_helper(
         "_(turbo's host here: turbo didn't have anything to say :bluefootbooby:)_"
     )
     if model_response:
-        turbo_response = model_response["choices"][0]["message"]
-        chat_context.add_message(turbo_response["content"], turbo_response["role"])
-    response = turbo_response["content"]
+        try:
+            turbo_response = model_response["choices"][0]["message"]
+            chat_context.add_message(turbo_response["content"], turbo_response["role"])
+            response = turbo_response["content"]
+        except KeyError:
+            response = turbo_response
+
 
     logger.info(
         f"interaction {id} - response to {hashed_user_identifier} received from OpenAI"
@@ -431,6 +435,25 @@ async def generate_image(
         openai_secret_key=OPENAI_SECRET_TOKEN,
         hashed_user_identifier=hashed_user_identifier,
     )
+
+    # catch problems with image generation
+    if not image_path:
+        logger.warning(f"interaction {interaction_id}: caught problem with image gen response")
+        response = turbo_query_helper(
+            query="START SYSTEM MESSAGE"    
+            "This message is coming from your host server."
+            "A user tried to generate a dalle image but the process failed."
+            "Please concisely inform the user of this error."
+            "30 words max."
+            "Their message may not be appropriate for DALLE to consume."
+            "They should be nice to deep neural networks!"
+            "END SYSTEM MESSAGE",
+            id=interaction_id,
+            hashed_user_identifier=hashed_user_identifier # this probably should be an ADMIN or SYSTEM id
+        )
+        await interaction.followup.send(content=response)
+        logger.info(f"interaction {interaction_id}: resolved")
+        return
 
     ## DISABLED - until a safer way to log user queries is implemented
     # add the query to the context
