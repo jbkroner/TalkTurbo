@@ -103,8 +103,6 @@ class OpenAIModelAssistant:
         path = (
             path
             + str(time.time())
-            + "---"
-            + self._safe_encode(string_to_encode=query.replace(" ", ""))
             + ".png"
         )
 
