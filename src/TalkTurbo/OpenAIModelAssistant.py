@@ -145,7 +145,7 @@ class OpenAIModelAssistant:
     def get_moderation_score(message: str, openai_secret_key: str) -> Tuple[str, float]:
         url = "https://api.openai.com/v1/moderations"
         headers = {"authorization": f"Bearer {openai_secret_key}"}
-        payload = {"input": message}
+        payload = {"input": message, "model": "text-moderation-latest"}
         response = requests.post(url=url, json=payload, headers=headers)
 
         try:
