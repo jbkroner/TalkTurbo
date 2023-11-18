@@ -35,7 +35,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "TalkTurbo"
-version = "0.0.10"
+version = "0.0.11"
 authors = [
   {name = "James Kroner", email = "contactmeongithubplease@example.com"},
 ]

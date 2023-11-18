@@ -141,7 +141,7 @@ if args.system_prompt:
     else:
         secret_prompt = args.system_prompt
 
-chat_context = ChatContext(secret_prompt=secret_prompt)
+chat_context = ChatContext(secret_prompt=secret_prompt, max_tokens=2048)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -455,20 +455,147 @@ async def generate_image(
         logger.info(f"interaction {interaction_id}: resolved")
         return
 
-    ## DISABLED - until a safer way to log user queries is implemented
     # add the query to the context
-    # content = (
-    #     "START SYSTEM MESSAGE"
-    #     "This message is coming from your host server."
-    #     "A user just used your host server to generate a DALL-E image"
-    #     f"The prompt was {query}"
-    #     "END SYSTEM MESSAGE"
-    # )
-    # chat_context.add_message(content=content, role="user")
+    content = (
+        "START SYSTEM MESSAGE"
+        "This message is coming from your host server."
+        "A user just used your host server to generate a DALL-E image"
+        f"The prompt was {query}"
+        "END SYSTEM MESSAGE"
+    )
+    chat_context.add_message(content=content, role="user")
 
     logger.info(f"interaction {interaction_id}: generated image {image_path}")
 
-    await interaction.followup.send(file=discord.File(image_path))
+    # get a response so we can readback the prompt
+    prompt_response = turbo_query_helper(
+        query="START SYSTEM MESSAGE"
+        "A user just generated an image"
+        "Read back the prompt and remark on it."
+        "The image will be included with your response."
+        "END SYSTEM MESSAGE",
+        id=interaction_id,
+        hashed_user_identifier=hashed_user_identifier
+    )
+
+    await interaction.followup.send(content=prompt_response, file=discord.File(image_path))
+
+    # clean up dalle file if requested
+    if args.disable_image_storage:
+        os.remove(path=image_path)
+        logger.info(
+            f"interaction {interaction_id}: unlinking image stored at {image_path}"
+        )
+
+    logger.info(f"interaction {interaction_id}: resolved")
+
+@bot.tree.command(
+    name="generate_image_dalle_3",
+    description="generate an image with the dalle3 model!",
+    guild=discord.Object(id=GUILD_ID),
+)
+async def generate_image(
+    interaction: discord.Interaction,
+    *,
+    query: str,
+):
+    interaction_id = interaction.id
+    user_identifier = build_unique_id_from_interaction(interaction=interaction)
+    hashed_user_identifier = (
+        None
+        if args.no_user_identifiers
+        else hash_user_identifier(user_identifier=user_identifier)
+    )
+    logger.info(
+        f"interaction {interaction_id} (new): generated hashed user identifier {hashed_user_identifier}.  Image prompt: {query}"
+    )
+    await interaction.response.defer(thinking=True)
+
+    if not assistant.dalle_timeout_passed():
+        remaining_time = assistant.dalle_timeout_remaining()
+        response = turbo_query_helper(
+            query="START SYSTEM MESSAGE"
+            "This message is coming from your host server."
+            "The user is trying to generate a dalle image through your host server."
+            "Please concisely inform the user that is not enough time has passed."
+            f"They must this many seconds (feel free to round): {remaining_time}"
+            "END SYSTEM MESSAGE",
+            id=interaction_id,
+            hashed_user_identifier=hashed_user_identifier,  # this probably should an ADMIN or SYSTEM id
+        )
+        await interaction.followup.send(content=response)
+        logger.info(f"interaction {interaction_id}: resolved")
+        return
+
+    max_category, max_score = OpenAIModelAssistant.get_moderation_score(
+        message=query,
+        openai_secret_key=OPENAI_SECRET_TOKEN,
+    )
+
+    logger.info(
+        f"interaction {interaction_id}: received moderation score for query from {hashed_user_identifier}.  Category: {max_category}. Score: {max_score}"
+    )
+
+    if max_category:
+        logger.warning(
+            f"interaction {interaction_id}: system prompt exceeded content moderation thresholds. category: {max_category}, score: {max_score}"
+        )
+        await interaction.followup.send(
+            f"_(turbo's host here: moderation threshold breached - category: {max_category} - score: {max_score}_"
+        )
+        logger.info(f"interaction {interaction_id}: resolved")
+        return
+
+    image_path = assistant.query_dalle(
+        query=query,
+        openai_secret_key=OPENAI_SECRET_TOKEN,
+        hashed_user_identifier=hashed_user_identifier,
+        use_dalle_3=True
+    )
+
+    # catch problems with image generation
+    if not image_path:
+        logger.warning(f"interaction {interaction_id}: caught problem with image gen response")
+        response = turbo_query_helper(
+            query="SYSTEM MESSAGE"    
+            "This message is coming from your host server."
+            "A user tried to generate a dalle image but the process failed."
+            "Please concisely inform the user of this error."
+            "30 words max."
+            "Their message may not be appropriate for DALLE to consume."
+            "They should be nice to deep neural networks!"
+            "END SYSTEM MESSAGE",
+            id=interaction_id,
+            hashed_user_identifier=hashed_user_identifier # this probably should be an ADMIN or SYSTEM id
+        )
+        await interaction.followup.send(content=response)
+        logger.info(f"interaction {interaction_id}: resolved")
+        return
+
+    # add the query to the context
+    content = (
+        "START SYSTEM MESSAGE"
+        "This message is coming from your host server."
+        "A user just used your host server to generate a DALL-E image"
+        f"The prompt was {query}"
+        "END SYSTEM MESSAGE"
+    )
+    chat_context.add_message(content=content, role="user")
+
+    logger.info(f"interaction {interaction_id}: generated image {image_path}")
+
+    # get a response so we can readback the prompt
+    prompt_response = turbo_query_helper(
+        query="START SYSTEM MESSAGE"
+        "A user just generated an image"
+        "Read back the prompt and remark on it."
+        "The image will be included with your response."
+        "END SYSTEM MESSAGE",
+        id=interaction_id,
+        hashed_user_identifier=hashed_user_identifier
+    )
+
+    await interaction.followup.send(content=prompt_response,file=discord.File(image_path))
 
     # clean up dalle file if requested
     if args.disable_image_storage:
