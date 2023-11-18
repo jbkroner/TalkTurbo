@@ -37,7 +37,7 @@ class OpenAIModelAssistant:
         self,
         context: ChatContext,
         prompt: str,
-        max_tokens: int = 100,
+        max_tokens: int = 200,
         temperature: float = 0.7,
         stop: List[str] = None,
         hashed_user_identifier: str = None,
@@ -75,6 +75,7 @@ class OpenAIModelAssistant:
         resolution: str = "large",
         hashed_user_identifier: str = None,
         openai_secret_key: str = "",
+        use_dalle_3: bool = False
     ) -> str:
         """
         generate an image with dalle. 
@@ -86,6 +87,11 @@ class OpenAIModelAssistant:
             "prompt": query,
             "size": OpenAIModelAssistant.DALLE_RESOLUTION[resolution],
         }
+
+        # defaults to dall-e-2
+        if use_dalle_3: 
+            payload['model'] = "dall-e-3"
+
 
         if hashed_user_identifier:
             payload["user"] = hashed_user_identifier
