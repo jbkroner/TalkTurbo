@@ -1,7 +1,10 @@
 from enum import Enum
 from datetime import datetime
 
+import tiktoken
 # api ref: https://platform.openai.com/docs/api-reference/chat/create
+
+ENCODER = tiktoken.get_encoding("cl100k_base")
 
 class MessageRole(Enum):
     SYSTEM = "system"
@@ -29,6 +32,8 @@ class SystemMessage(Message):
         super().__init__(role=MessageRole.SYSTEM)
         self.content = content
         self.name = name
+        self.encoding = ENCODER.encode(self.content)
+        self.encoding_length_in_token = len(self.encoding)
 
 class UserMessage(Message):
     def __init__(self, content: str, name: str = None):
@@ -42,6 +47,8 @@ class UserMessage(Message):
         super().__init__(role=MessageRole.USER)
         self.content = content
         self.name = name
+        self.encoding = ENCODER.encode(self.content)
+        self.encoding_length_in_token = len(self.encoding)
 
 class AssistantMessage(Message):
     def __init__(self, content: str, name: str = None):
@@ -55,6 +62,8 @@ class AssistantMessage(Message):
         super().__init__(role=MessageRole.ASSISTANT)
         self.content = content
         self.name = name
+        self.encoding = ENCODER.encode(self.content)
+        self.encoding_length_in_token = len(self.encoding)
 
 class FunctionMessage(Message):
     def __init__(self, role: MessageRole):
