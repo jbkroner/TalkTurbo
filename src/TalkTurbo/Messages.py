@@ -12,6 +12,7 @@ class MessageRole(Enum):
 class Message:
     def __init__(self, role: MessageRole):
         self.role = role
+        self.created_on_utc = datetime.utcnow()
 
     def __str__(self):
         return str(vars(self))
