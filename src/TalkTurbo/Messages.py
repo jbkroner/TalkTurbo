@@ -13,6 +13,8 @@ class Message:
     def __init__(self, role: MessageRole):
         self.role = role
 
+    def __str__(self):
+        return str(vars(self))
 class SystemMessage(Message):
     def __init__(self, content: str, name: str=None):
         """
