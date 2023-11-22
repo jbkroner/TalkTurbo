@@ -20,7 +20,15 @@ class Message:
 
     def __str__(self):
         return str(vars(self))
-class SystemMessage(Message):
+
+class ContentMessage:
+    def __init__(self, content: str, name: str=None) -> None:
+        self.content = content
+        self.name = name
+        self.encoding = ENCODER.encode(self.content)
+        self.encoding_length_in_token = len(self.encoding)
+
+class SystemMessage(ContentMessage):
     def __init__(self, content: str, name: str=None):
         """
         args:
@@ -29,13 +37,9 @@ class SystemMessage(Message):
                   Provides the model information to differentiate 
                   between participants of the same role.
         """
-        super().__init__(role=MessageRole.SYSTEM)
-        self.content = content
-        self.name = name
-        self.encoding = ENCODER.encode(self.content)
-        self.encoding_length_in_token = len(self.encoding)
+        super().__init__(role=MessageRole.SYSTEM, content=content, name=name)
 
-class UserMessage(Message):
+class UserMessage(ContentMessage):
     def __init__(self, content: str, name: str = None):
         """
         args:
@@ -44,13 +48,9 @@ class UserMessage(Message):
                   Provides the model information to differentiate 
                   between participants of the same role.
         """
-        super().__init__(role=MessageRole.USER)
-        self.content = content
-        self.name = name
-        self.encoding = ENCODER.encode(self.content)
-        self.encoding_length_in_token = len(self.encoding)
+        super().__init__(role=MessageRole.USER, content=content, name=name)
 
-class AssistantMessage(Message):
+class AssistantMessage(ContentMessage):
     def __init__(self, content: str, name: str = None):
         """
         args:
@@ -59,11 +59,7 @@ class AssistantMessage(Message):
                   Provides the model information to differentiate 
                   between participants of the same role.
         """
-        super().__init__(role=MessageRole.ASSISTANT)
-        self.content = content
-        self.name = name
-        self.encoding = ENCODER.encode(self.content)
-        self.encoding_length_in_token = len(self.encoding)
+        super().__init__(role=MessageRole.ASSISTANTm, content=content, name=name)
 
 class FunctionMessage(Message):
     def __init__(self, role: MessageRole):
