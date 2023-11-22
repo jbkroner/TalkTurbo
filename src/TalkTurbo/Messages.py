@@ -21,8 +21,9 @@ class Message:
     def __str__(self):
         return str(vars(self))
 
-class ContentMessage:
-    def __init__(self, content: str, name: str=None) -> None:
+class ContentMessage(Message):
+    def __init__(self, role: MessageRole, content: str, name: str = None):
+        super().__init__(role)
         self.content = content
         self.name = name
         self.encoding = ENCODER.encode(self.content)
