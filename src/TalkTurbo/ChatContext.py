@@ -51,9 +51,10 @@ class ChatContext:
 
     def to_dict(self) -> dict:
         """Convert the context to a dictionary."""
+        messages = [message.to_completion_dict() for message in self.messages]
         return {
-            "messages": self.messages,
-            "secret_prompt": self.secret_prompt,
+            "messages": messages,
+            "system_prompt": self.system_prompt,
             "max_tokens": self.max_tokens,
         }
 

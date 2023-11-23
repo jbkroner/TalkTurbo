@@ -29,6 +29,9 @@ class ContentMessage(Message):
         self.encoding = ENCODER.encode(self.content)
         self.encoding_length_in_tokens = len(self.encoding)
 
+    def to_completion_dict(self) -> dict:
+        return {"role": self.role.value, "content": self.content}
+
 class SystemMessage(ContentMessage):
     def __init__(self, content: str, name: str=None):
         """
