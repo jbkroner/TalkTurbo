@@ -57,26 +57,3 @@ class ChatContext:
             "system_prompt": self.system_prompt,
             "max_tokens": self.max_tokens,
         }
-
-    @classmethod
-    def from_dict(cls, data: dict) -> "ChatContext":
-        """Create a new context from a dictionary."""
-        return cls(
-            messages=data["messages"],
-            secret_prompt=data["secret_prompt"],
-            max_tokens=data["max_tokens"],
-        )
-
-    def serialize(self) -> str:
-        """Serialize the context to a JSON string."""
-        import json
-
-        return json.dumps(self.to_dict())
-
-    @classmethod
-    def deserialize(cls, serialized_context: str) -> "ChatContext":
-        """Deserialize a serialized context from a JSON string."""
-        import json
-
-        data = json.loads(serialized_context)
-        return cls.from_dict(data)
