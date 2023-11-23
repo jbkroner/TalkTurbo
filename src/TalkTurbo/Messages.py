@@ -27,7 +27,7 @@ class ContentMessage(Message):
         self.content = content
         self.name = name
         self.encoding = ENCODER.encode(self.content)
-        self.encoding_length_in_token = len(self.encoding)
+        self.encoding_length_in_tokens = len(self.encoding)
 
 class SystemMessage(ContentMessage):
     def __init__(self, content: str, name: str=None):
@@ -60,7 +60,7 @@ class AssistantMessage(ContentMessage):
                   Provides the model information to differentiate 
                   between participants of the same role.
         """
-        super().__init__(role=MessageRole.ASSISTANTm, content=content, name=name)
+        super().__init__(role=MessageRole.ASSISTANT, content=content, name=name)
 
 class FunctionMessage(Message):
     def __init__(self, role: MessageRole):
