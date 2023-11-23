@@ -66,13 +66,14 @@ class TestChatContext(unittest.TestCase):
         tokens = chat_context.length_in_tokens("This is a test.")
         self.assertEqual(tokens, 5)
 
-    # def test_to_dict(self):
-    #     chat_context = ChatContext()
-    #     chat_context.add_message(UserMessage("Hello"))
-    #     context_dict = chat_context.to_dict()
-    #     self.assertEqual(context_dict["secret_prompt"], "")
-    #     self.assertEqual(context_dict["max_tokens"], 1024)
-    #     self.assertEqual(len(context_dict["messages"]), 1)
+    def test_to_dict(self):
+        chat_context = ChatContext()
+        chat_context.add_message(UserMessage("Hello"))
+        chat_context.add_message(UserMessage("Hello2"))
+        context_dict = chat_context.get_messages_dict()
+        self.assertEqual(context_dict['messages'][0]["content"], "Hello")
+        self.assertEqual(context_dict['messages'][1]["content"], "Hello2")
+
 
     # def test_from_dict(self):
     #     data = {
