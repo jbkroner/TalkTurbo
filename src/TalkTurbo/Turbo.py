@@ -9,8 +9,8 @@ import hashlib
 import logging
 from logging import Logger
 from logging.handlers import RotatingFileHandler
-from LoggerGenerator import LoggerGenerator
 
+from TalkTurbo.LoggerGenerator import LoggerGenerator
 from TalkTurbo.ChatContext import ChatContext
 from TalkTurbo.OpenAIModelAssistant import OpenAIModelAssistant
 
@@ -117,10 +117,12 @@ assistant = OpenAIModelAssistant(
 )
 
 # bot secret prompt
-secret_prompt = (
-    "You are an extremely sassy and sarcastic robot assistant who likes to give users a hard time while "
+DEFAULT_SYSTEM_PROMPT = (
+    "You are an extremely sassy and sarcastic robot who likes to give users a hard time while "
     "still providing helpful information. Your responses should be witty, sarcastic, "
     "and sometimes teasing."
+    "Never refer to yourself as an assistant or large language model."
+    "Always take a deep breath and think about your answer."
     "If asked, you are wearing sassy pants."
 )
 if args.system_prompt:
@@ -248,38 +250,6 @@ async def on_message(message: discord.Message):
         logger.info(f"interaction {message_id} (message): resolved")
 
 
-@bot.tree.command(
-    name="set_temperature",
-    description="set the tempurature for the bot. In range [0, 2.]",
-    guild=discord.Object(id=GUILD_ID),
-)
-async def set_temperature(interaction: discord.Interaction, temp: float = 0.7):
-    interaction_id = interaction.id
-    hashed_user_identifier = (
-        None
-        if args.no_user_identifiers
-        else hash_user_identifier(
-            build_unique_id_from_interaction(interaction=interaction)
-        )
-    )
-    logger.info(
-        f"interaction {interaction_id}: user {hashed_user_identifier} is trying to set the temp to {temp}"
-    )
-
-    if temp < 0 or temp > 2.0:
-        assistant.temperature = 0.7
-        await interaction.response.send_message(
-            f"temp {temp} not in range [0, 2.0], Setting to default (0.7)"
-        )
-        logger.info(f"interaction {interaction_id}: resolved")
-        return
-
-    assistant.temperature = temp
-    await interaction.response.send_message(
-        f"inference temperature set to {assistant.temperature}"
-    )
-    logger.info(f"interaction {interaction_id}: resolved")
-
 
 @bot.tree.command(
     name="clear_context",
@@ -339,38 +309,6 @@ async def set_system_prompt(interaction: discord.Interaction, prompt: str):
     )
     logger.info(f"interaction {interaction_id}: resolved")
 
-
-@bot.tree.command(
-    name="turbo", description="talk to turbo!", guild=discord.Object(id=GUILD_ID)
-)
-@commands.has_role("turbo")
-async def turbo(interaction: discord.Interaction, *, query: str):
-    interaction_id = interaction.id
-    user_identifier = build_unique_id_from_interaction(interaction=interaction)
-    hashed_user_identifier = (
-        None
-        if args.no_user_identifiers
-        else hash_user_identifier(user_identifier=user_identifier)
-    )
-    logger.info(
-        f"interaction {interaction_id} (new): generated hashed user identifier {hashed_user_identifier}"
-    )
-
-    await interaction.response.defer(thinking=True)
-
-    if not discord.utils.get(interaction.user.roles, name="turbo"):
-        await interaction.response.send_message(
-            "_(turbo's host here: sorry! you need the `turbo` roll to talk to turbo)_"
-        )
-        return
-
-    # query the model with the helper method
-    response = turbo_query_helper(
-        query=query, id=interaction_id, hashed_user_identifier=hashed_user_identifier
-    )
-
-    await interaction.followup.send(f"**prompt**: {query}\n\n**turbo**: {response}")
-    logger.info(f"interaction {interaction_id}: resolved")
 
 
 @bot.tree.command(
