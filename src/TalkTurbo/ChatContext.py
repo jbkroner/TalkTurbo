@@ -45,10 +45,6 @@ class ChatContext:
         while self.context_length_in_tokens() > self.max_tokens:
             del self.messages[0]
 
-    def length_in_tokens(self, string: str) -> int:
-        """Return the number of tokens in a string."""
-        return len(self._encoding.encode(string))
-
     def to_dict(self) -> dict:
         """Convert the context to a dictionary."""
         messages = [message.to_completion_dict() for message in self.messages]
