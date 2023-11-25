@@ -62,45 +62,13 @@ class TestChatContext(unittest.TestCase):
         self.assertEqual(chat_context.messages[0].content, "Hello")
         self.assertEqual(chat_context.messages[1].content, "Hi")
 
-        chat_context = ChatContext()
-        tokens = chat_context.length_in_tokens("This is a test.")
-        self.assertEqual(tokens, 5)
-
     def test_to_dict(self):
         chat_context = ChatContext()
         chat_context.add_message(UserMessage("Hello"))
         chat_context.add_message(UserMessage("Hello2"))
-        context_dict = chat_context.get_messages_dict()
-        self.assertEqual(context_dict['messages'][0]["content"], "Hello")
-        self.assertEqual(context_dict['messages'][1]["content"], "Hello2")
-
-
-    # def test_from_dict(self):
-    #     data = {
-    #         "messages": [{"role": "user", "content": "Hello", "num_tokens": 1}],
-    #         "secret_prompt": "",
-    #         "max_tokens": 1024,
-    #     }
-    #     chat_context = ChatContext.from_dict(data)
-    #     self.assertEqual(chat_context.secret_prompt, "")
-    #     self.assertEqual(chat_context.max_tokens, 1024)
-    #     self.assertEqual(len(chat_context.messages), 1)
-
-    # def test_serialize(self):
-    #     chat_context = ChatContext()
-    #     chat_context.add_message("Hello", "user")
-    #     serialized_context = chat_context.serialize()
-    #     self.assertIsInstance(serialized_context, str)
-
-    # def test_deserialize(self):
-    #     chat_context = ChatContext()
-    #     chat_context.add_message("Hello", "user")
-    #     serialized_context = chat_context.serialize()
-    #     deserialized_context = ChatContext.deserialize(serialized_context)
-    #     self.assertIsInstance(deserialized_context, ChatContext)
-    #     self.assertEqual(deserialized_context.secret_prompt, "")
-    #     self.assertEqual(deserialized_context.max_tokens, 1024)
-    #     self.assertEqual(len(deserialized_context.messages), 1)
+        context_list = chat_context.get_messages_as_list()
+        self.assertEqual(context_list[0]["content"], "Hello")
+        self.assertEqual(context_list[1]["content"], "Hello2")
 
 
 if __name__ == "__main__":

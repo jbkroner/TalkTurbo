@@ -45,11 +45,6 @@ class ChatContext:
         while self.context_length_in_tokens() > self.max_tokens:
             del self.messages[0]
 
-    def to_dict(self) -> dict:
-        """Convert the context to a dictionary."""
-        messages = [message.to_completion_dict() for message in self.messages]
-        return {
-            "messages": messages,
-            "system_prompt": self.system_prompt,
-            "max_tokens": self.max_tokens,
-        }
+    def get_messages_as_list(self) -> List[dict]:
+        """Convert the context messages to a list of message dicts"""
+        return [message.to_completion_dict() for message in self.messages]
