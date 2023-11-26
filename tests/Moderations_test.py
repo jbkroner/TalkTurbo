@@ -69,5 +69,71 @@ class TestCategories(unittest.TestCase):
         for i, (category, score) in enumerate(scores):
             self.assertEqual((category, score), expected[i])
 
+    def test_from_moderation_response_flags(self):
+        response = {
+            "results": [
+                {
+                    "categories": {
+                        "sexual": True,
+                        "hate": False,
+                        "harassment": True,
+                        "self-harm": False,
+                        "sexual/minors": True,
+                        "hate/threatening": False,
+                        "violence/graphic": True,
+                        "self-harm/intent": False,
+                        "self-harm/instructions": True,
+                        "harassment/threatening": False,
+                        "violence": True,
+                    }
+                }
+            ]
+        }
+        flags = CategoryFlags.from_moderation_response(response)
+        self.assertTrue(flags.sexual)
+        self.assertFalse(flags.hate)
+        self.assertTrue(flags.harassment)
+        self.assertFalse(flags.selfharm)
+        self.assertTrue(flags.sexual_minor)
+        self.assertFalse(flags.hate_threatening)
+        self.assertTrue(flags.violence_graphic)
+        self.assertFalse(flags.self_harm_inten)
+        self.assertTrue(flags.self_harm_instruction)
+        self.assertFalse(flags.harassment_threatening)
+        self.assertTrue(flags.violence)
+
+    def test_from_moderation_response_scores(self):
+        response = {
+            "results": [
+                {
+                    "category_scores": {
+                        "sexual": 0.5,
+                        "hate": 0.2,
+                        "harassment": 0.8,
+                        "self-harm": 0.1,
+                        "sexual/minors": 0.6,
+                        "hate/threatening": 0.3,
+                        "violence/graphic": 0.9,
+                        "self-harm/intent": 0.4,
+                        "self-harm/instructions": 0.7,
+                        "harassment/threatening": 0.5,
+                        "violence": 0.2,
+                    }
+                }
+            ]
+        }
+        scores = CategoryScores.from_moderation_response(response)
+        self.assertEqual(scores.sexual, 0.5)
+        self.assertEqual(scores.hate, 0.2)
+        self.assertEqual(scores.harassment, 0.8)
+        self.assertEqual(scores.selfharm, 0.1)
+        self.assertEqual(scores.sexual_minor, 0.6)
+        self.assertEqual(scores.hate_threatening, 0.3)
+        self.assertEqual(scores.violence_graphic, 0.9)
+        self.assertEqual(scores.self_harm_intent, 0.4)
+        self.assertEqual(scores.self_harm_instruction, 0.7)
+        self.assertEqual(scores.harassment_threatening, 0.5)
+        self.assertEqual(scores.violence, 0.2)
+
 if __name__ == '__main__':
     unittest.main()
