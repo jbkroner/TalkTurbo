@@ -28,7 +28,6 @@ class ChatContext:
 
         return total_tokens
 
-
     def add_message(self, message: ContentMessage) -> None:
         """Add a message to the context and trim old messages that don't fit within max_tokens."""
         self.messages.append(message)
