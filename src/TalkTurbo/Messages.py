@@ -59,7 +59,7 @@ class ContentMessage(Message):
             },
             json={
                 "input": self.content,
-                "model": "text-moderation-stable"
+                "model": "text-moderation-latest"
             }
         ) 
 
