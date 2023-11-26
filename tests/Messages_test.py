@@ -1,5 +1,25 @@
 import unittest
 from TalkTurbo.Messages import MessageRole, SystemMessage, UserMessage, AssistantMessage, FunctionMessage, ToolMessage, ContentMessage
+from TalkTurbo.Moderations import CategoryFlags, CategoryScores
+
+# Mock response for moderation
+mock_moderation_response = {
+    "results": [
+        {
+            "flagged": True,
+            "categories": {
+                "sexual": False,
+                # ... other categories ...
+                "violence": True,
+            },
+            "category_scores": {
+                "sexual": 0.1,
+                # ... other categories ...
+                "violence": 0.9,
+            }
+        }
+    ]
+}
 
 class TestMessageClasses(unittest.TestCase):
     
@@ -10,6 +30,17 @@ class TestMessageClasses(unittest.TestCase):
         self.assertIsNotNone(msg.created_on_utc)
         self.assertIsNotNone(msg.encoding)
         self.assertTrue(isinstance(msg.encoding_length_in_tokens, int))
+
+    def test_moderation(self):
+        # Mock the requests.post method
+        with unittest.mock.patch('requests.post', return_value=unittest.mock.Mock(json=lambda: mock_moderation_response)) as mock_post:
+            msg = ContentMessage(MessageRole.USER, "Some potentially sensitive content")
+            msg.moderate()
+
+            self.assertTrue(mock_post.called)
+            self.assertTrue(msg._flagged)
+            self.assertIsInstance(msg._category_flags, CategoryFlags)
+            self.assertIsInstance(msg._category_scores, CategoryScores)
 
     def test_system_message_creation(self):
         msg = SystemMessage("System message")
