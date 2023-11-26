@@ -40,6 +40,7 @@ class ContentMessage(Message):
         # message is unmoderated.
         # set with moderate()
         # get with getters.
+        self._moderated = False
         self._category_flags = None
         self._category_scores = None
         self._flagged = None
@@ -69,6 +70,40 @@ class ContentMessage(Message):
         self._flagged = moderation_data['results'][0]['flagged']
         self._category_flags = CategoryFlags.from_moderation_response(moderation_data)
         self._category_scores = CategoryScores.from_moderation_response(moderation_data)
+        self._moderated = True
+
+
+    def flagged(self) -> bool:
+        """
+        Returns:
+            True if this message has content flags, else False
+        """
+        if not self._moderated:
+            self.moderate()
+
+        return self._flagged
+
+    def get_category_flags(self) -> CategoryFlags:
+        """
+        Returns:
+            A CategoryFlags instance for this message.
+        """
+        if not self._moderated:
+            self.moderate()
+
+        return self._category_flags
+
+        
+    def get_category_scores(self) -> CategoryScores:
+        """
+        Returns:
+            A CategoryScores instance for this message.
+        """
+        if not self._moderated:
+            self.moderate()
+
+        return self._category_scores
+        
 
 
 class SystemMessage(ContentMessage):

@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 from TalkTurbo.Messages import MessageRole, SystemMessage, UserMessage, AssistantMessage, FunctionMessage, ToolMessage, ContentMessage
 from TalkTurbo.Moderations import CategoryFlags, CategoryScores
 
@@ -33,7 +34,7 @@ class TestMessageClasses(unittest.TestCase):
 
     def test_moderation(self):
         # Mock the requests.post method
-        with unittest.mock.patch('requests.post', return_value=unittest.mock.Mock(json=lambda: mock_moderation_response)) as mock_post:
+        with patch('requests.post', return_value=unittest.mock.Mock(json=lambda: mock_moderation_response)) as mock_post:
             msg = ContentMessage(MessageRole.USER, "Some potentially sensitive content")
             msg.moderate()
 
@@ -41,6 +42,47 @@ class TestMessageClasses(unittest.TestCase):
             self.assertTrue(msg._flagged)
             self.assertIsInstance(msg._category_flags, CategoryFlags)
             self.assertIsInstance(msg._category_scores, CategoryScores)
+
+    def test_moderate_method(self):
+        with patch('requests.post') as mock_post:
+            mock_post.return_value.json.return_value = mock_moderation_response
+            msg = ContentMessage(MessageRole.USER, "Some content")
+            msg.moderate()
+
+            self.assertTrue(msg._moderated)
+            self.assertTrue(msg._flagged)
+            self.assertIsInstance(msg._category_flags, CategoryFlags)
+            self.assertIsInstance(msg._category_scores, CategoryScores)
+
+    def test_flagged_method(self):
+        with patch('requests.post') as mock_post:
+            mock_post.return_value.json.return_value = mock_moderation_response
+            msg = ContentMessage(MessageRole.USER, "Some content")
+            
+            result = msg.flagged()
+            
+            self.assertTrue(mock_post.called) # Check if moderate() was called
+            self.assertTrue(result)
+
+    def test_get_category_flags_method(self):
+        with patch('requests.post') as mock_post:
+            mock_post.return_value.json.return_value = mock_moderation_response
+            msg = ContentMessage(MessageRole.USER, "Some content")
+            
+            result = msg.get_category_flags()
+            
+            self.assertTrue(mock_post.called) # Check if moderate() was called
+            self.assertIsInstance(result, CategoryFlags)
+
+    def test_get_category_scores_method(self):
+        with patch('requests.post') as mock_post:
+            mock_post.return_value.json.return_value = mock_moderation_response
+            msg = ContentMessage(MessageRole.USER, "Some content")
+            
+            result = msg.get_category_scores()
+            
+            self.assertTrue(mock_post.called) # Check if moderate() was called
+            self.assertIsInstance(result, CategoryScores)
 
     def test_system_message_creation(self):
         msg = SystemMessage("System message")
