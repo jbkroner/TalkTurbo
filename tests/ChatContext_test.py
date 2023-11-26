@@ -67,8 +67,9 @@ class TestChatContext(unittest.TestCase):
         chat_context.add_message(UserMessage("Hello"))
         chat_context.add_message(UserMessage("Hello2"))
         context_list = chat_context.get_messages_as_list()
-        self.assertEqual(context_list[0]["content"], "Hello")
-        self.assertEqual(context_list[1]["content"], "Hello2")
+        self.assertEqual(context_list[0]["content"], "") # system prompt
+        self.assertEqual(context_list[1]["content"], "Hello")
+        self.assertEqual(context_list[2]["content"], "Hello2")
 
 
 if __name__ == "__main__":

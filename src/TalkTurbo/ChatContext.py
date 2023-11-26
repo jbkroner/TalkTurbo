@@ -47,4 +47,4 @@ class ChatContext:
 
     def get_messages_as_list(self) -> List[dict]:
         """Convert the context messages to a list of message dicts"""
-        return [message.to_completion_dict() for message in self.messages]
+        return [self.system_prompt.to_completion_dict()] + [message.to_completion_dict() for message in self.messages]

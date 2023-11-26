@@ -12,6 +12,7 @@ from logging.handlers import RotatingFileHandler
 
 from TalkTurbo.LoggerGenerator import LoggerGenerator
 from TalkTurbo.ChatContext import ChatContext
+from TalkTurbo.Messages import AssistantMessage, SystemMessage, UserMessage
 from TalkTurbo.OpenAIModelAssistant import OpenAIModelAssistant
 
 
@@ -117,7 +118,7 @@ assistant = OpenAIModelAssistant(
 )
 
 # bot secret prompt
-DEFAULT_SYSTEM_PROMPT = (
+DEFAULT_SYSTEM_PROMPT = SystemMessage(
     "You are an extremely sassy and sarcastic robot who likes to give users a hard time while "
     "still providing helpful information. Your responses should be witty, sarcastic, "
     "and sometimes teasing."
@@ -143,7 +144,7 @@ if args.system_prompt:
     else:
         secret_prompt = args.system_prompt
 
-chat_context = ChatContext(secret_prompt=secret_prompt, max_tokens=2048)
+chat_context = ChatContext(system_prompt=DEFAULT_SYSTEM_PROMPT, max_tokens=2048)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -166,7 +167,7 @@ def hash_user_identifier(user_identifier: str) -> str:
 
 def turbo_query_helper(
     query: str, id: str, hashed_user_identifier: str = None, logger: Logger = logger
-) -> str:
+) -> AssistantMessage:
     logger.info(
         f"interaction {id} - query helper working request from {hashed_user_identifier}"
     )
@@ -182,7 +183,8 @@ def turbo_query_helper(
         return f"_(turbos host here: you've breached the content moderation threshold breached - category: {max_category} - score: {max_score}.  Keep it safe and friendly please!)_"
 
     # add user message to the context
-    chat_context.add_message(content=query, role="user")
+    message = UserMessage(content=query)
+    chat_context.add_message(message)
     logger.debug(f"interaction {id} - context updated with user query")
 
     turbo_response = (
@@ -205,9 +207,9 @@ def turbo_query_helper(
     )
     if model_response:
         try:
-            turbo_response = model_response["choices"][0]["message"]
-            chat_context.add_message(turbo_response["content"], turbo_response["role"])
-            response = turbo_response["content"]
+            turbo_response = model_response["choices"][0]["message"]["content"]
+            turbo_response = AssistantMessage(turbo_response)
+            chat_context.add_message(turbo_response)
         except KeyError:
             response = turbo_response
 
@@ -216,7 +218,7 @@ def turbo_query_helper(
         f"interaction {id} - response to {hashed_user_identifier} received from OpenAI"
     )
 
-    return response
+    return turbo_response
 
 
 # events
@@ -246,69 +248,8 @@ async def on_message(message: discord.Message):
             id=message_id,
             hashed_user_identifier=hashed_user_identifier,
         )
-        await message.reply(response)
+        await message.reply(response.content)
         logger.info(f"interaction {message_id} (message): resolved")
-
-
-
-@bot.tree.command(
-    name="clear_context",
-    description="clear the current context (other than the system prompt)",
-    guild=discord.Object(id=GUILD_ID),
-)
-async def clear_context(interaction: discord.Interaction):
-    interaction_id = interaction.id
-    hashed_user_identifier = (
-        None
-        if args.no_user_identifiers
-        else hash_user_identifier(
-            build_unique_id_from_interaction(interaction=interaction)
-        )
-    )
-    logger.info(
-        f"interaction {interaction_id}: user {hashed_user_identifier} is clearing the conversation context"
-    )
-    assistant.temperature = temperature
-
-    await interaction.response.send_message(f"conversation context cleared")
-    logger.info(f"interaction {interaction_id}: resolved")
-
-
-@bot.tree.command(
-    name="set_system_prompt",
-    description="set the system prompt for the bot",
-    guild=discord.Object(id=GUILD_ID),
-)
-async def set_system_prompt(interaction: discord.Interaction, prompt: str):
-    interaction_id = interaction.id
-    hashed_user_identifier = (
-        None
-        if args.no_user_identifiers
-        else hash_user_identifier(
-            build_unique_id_from_interaction(interaction=interaction)
-        )
-    )
-    logger.info(
-        f"interaction {interaction_id}: user {hashed_user_identifier} is trying to set the system prompt to '{prompt}'"
-    )
-    max_category, max_score = OpenAIModelAssistant.get_moderation_score(
-        message=prompt, openai_secret_key=OPENAI_SECRET_TOKEN
-    )
-    if max_category:
-        logger.warning(
-            f"interaction {interaction_id}: system prompt exceeded content moderation thresholds. category: {max_category}, score: {max_score}"
-        )
-        await interaction.response.send_message(
-            f"_(host here: moderation threshold breached - {max_category} - {max_score})_"
-        )
-        logger.info(f"interaction {interaction_id}: resolved")
-        return
-    chat_context.secret_prompt = prompt
-    await interaction.response.send_message(
-        f"secret prompt set to '{chat_context.secret_prompt}'"
-    )
-    logger.info(f"interaction {interaction_id}: resolved")
-
 
 
 @bot.tree.command(
@@ -345,7 +286,7 @@ async def generate_image(
             id=interaction_id,
             hashed_user_identifier=hashed_user_identifier,  # this probably should an ADMIN or SYSTEM id
         )
-        await interaction.followup.send(content=response)
+        await interaction.followup.send(content=response.content)
         logger.info(f"interaction {interaction_id}: resolved")
         return
 
@@ -394,14 +335,12 @@ async def generate_image(
         return
 
     # add the query to the context
-    content = (
-        "START SYSTEM MESSAGE"
+    sys_message = SystemMessage(
         "This message is coming from your host server."
         "A user just used your host server to generate a DALL-E image"
         f"The prompt was {query}"
-        "END SYSTEM MESSAGE"
     )
-    chat_context.add_message(content=content, role="user")
+    chat_context.add_message(sys_message)
 
     logger.info(f"interaction {interaction_id}: generated image {image_path}")
 
@@ -416,7 +355,7 @@ async def generate_image(
         hashed_user_identifier=hashed_user_identifier
     )
 
-    await interaction.followup.send(content=prompt_response, file=discord.File(image_path))
+    await interaction.followup.send(content=prompt_response.content, file=discord.File(image_path))
 
     # clean up dalle file if requested
     if args.disable_image_storage:
@@ -461,7 +400,7 @@ async def generate_image(
             id=interaction_id,
             hashed_user_identifier=hashed_user_identifier,  # this probably should an ADMIN or SYSTEM id
         )
-        await interaction.followup.send(content=response)
+        await interaction.followup.send(content=response.content)
         logger.info(f"interaction {interaction_id}: resolved")
         return
 
@@ -511,14 +450,12 @@ async def generate_image(
         return
 
     # add the query to the context
-    content = (
-        "START SYSTEM MESSAGE"
+    sys_message = SystemMessage(
         "This message is coming from your host server."
         "A user just used your host server to generate a DALL-E image"
         f"The prompt was {query}"
-        "END SYSTEM MESSAGE"
     )
-    chat_context.add_message(content=content, role="user")
+    chat_context.add_message(sys_message)
 
     logger.info(f"interaction {interaction_id}: generated image {image_path}")
 
@@ -533,7 +470,7 @@ async def generate_image(
         hashed_user_identifier=hashed_user_identifier
     )
 
-    await interaction.followup.send(content=prompt_response,file=discord.File(image_path))
+    await interaction.followup.send(content=prompt_response.content,file=discord.File(image_path))
 
     # clean up dalle file if requested
     if args.disable_image_storage:
