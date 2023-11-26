@@ -46,11 +46,10 @@ class OpenAIModelAssistant:
         if stop is None:
             stop = ["\n"]
 
-        messages = self._build_prompt(context=context)
         headers = {"authorization": f"Bearer {openai_secret_key}"}
         payload = {
             "model": "gpt-3.5-turbo",
-            "messages": messages,
+            "messages": context.get_messages_as_list(),
             "temperature": temperature,
             "max_tokens": max_tokens,
             "n": 1,  # number of completions to generatei

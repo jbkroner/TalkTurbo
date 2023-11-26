@@ -1,17 +1,25 @@
-import tiktoken
+from typing import List
+from datetime import datetime, timedelta
 
+import tiktoken
+from TalkTurbo.Messages import ContentMessage, UserMessage, SystemMessage, AssistantMessage
 
 class ChatContext:
     _tokenizer_downloaded = False
 
     def __init__(
-        self, messages: list = None, secret_prompt: str = "", max_tokens: int = 1024
+        self, 
+        messages: List[ContentMessage] = None, 
+        system_prompt: SystemMessage = SystemMessage(""), 
+        max_tokens: int = 1024,
+        ttl_hours: int = 24
     ) -> None:
         if not messages:  # defaulting to [] was causing problems in the tests
             messages = []
         self.messages = messages
-        self.secret_prompt = secret_prompt
+        self.system_prompt = system_prompt
         self.max_tokens = max_tokens
+        self.ttl = timedelta(hours=ttl_hours) # time-to-live for messages
         self._encoding = tiktoken.get_encoding("cl100k_base")
 
     def __str__(self) -> str:
@@ -19,20 +27,22 @@ class ChatContext:
 
     def context_length_in_tokens(self) -> int:
         """Return the total length of the context in tokens."""
-        total_tokens = self.length_in_tokens(self.secret_prompt)
+        total_tokens = self.system_prompt.encoding_length_in_tokens
+
         for message in self.messages:
-            total_tokens += message["num_tokens"]
+            total_tokens += message.encoding_length_in_tokens
+
         return total_tokens
 
-    def add_message(self, content: str, role: str) -> None:
+    def add_message(self, message: ContentMessage) -> None:
         """Add a message to the context and trim old messages that don't fit within max_tokens."""
-        num_tokens = self.length_in_tokens(content)
-        new_message = {"role": role, "content": content, "num_tokens": num_tokens}
-
-        self.messages.append(new_message)
+        self.messages.append(message)
 
         # shorten the context to max_tokens if needed
         self._reduce_context()
+        
+        # remove stale messages
+        self._remove_stale_messages()
 
     def _reduce_context(self):
         """
@@ -43,37 +53,12 @@ class ChatContext:
         while self.context_length_in_tokens() > self.max_tokens:
             del self.messages[0]
 
-    def length_in_tokens(self, string: str) -> int:
-        """Return the number of tokens in a string."""
-        return len(self._encoding.encode(string))
+    def _remove_stale_messages(self):
+        """Remove messages that are older than the TTL"""
+        current_time = datetime.utcnow()
+        self.messages = [m for m in self.messages if current_time - m.created_on_utc < self.ttl]
 
-    def to_dict(self) -> dict:
-        """Convert the context to a dictionary."""
-        return {
-            "messages": self.messages,
-            "secret_prompt": self.secret_prompt,
-            "max_tokens": self.max_tokens,
-        }
 
-    @classmethod
-    def from_dict(cls, data: dict) -> "ChatContext":
-        """Create a new context from a dictionary."""
-        return cls(
-            messages=data["messages"],
-            secret_prompt=data["secret_prompt"],
-            max_tokens=data["max_tokens"],
-        )
-
-    def serialize(self) -> str:
-        """Serialize the context to a JSON string."""
-        import json
-
-        return json.dumps(self.to_dict())
-
-    @classmethod
-    def deserialize(cls, serialized_context: str) -> "ChatContext":
-        """Deserialize a serialized context from a JSON string."""
-        import json
-
-        data = json.loads(serialized_context)
-        return cls.from_dict(data)
+    def get_messages_as_list(self) -> List[dict]:
+        """Convert the context messages to a list of message dicts"""
+        return [self.system_prompt.to_completion_dict()] + [message.to_completion_dict() for message in self.messages]
