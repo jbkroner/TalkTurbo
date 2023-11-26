@@ -1,4 +1,6 @@
 import unittest
+from unittest.mock import patch
+from datetime import datetime, timedelta
 from TalkTurbo.ChatContext import ChatContext
 from TalkTurbo.Messages import SystemMessage, AssistantMessage, UserMessage
 
@@ -61,6 +63,30 @@ class TestChatContext(unittest.TestCase):
         self.assertEqual(len(chat_context.messages), 2)
         self.assertEqual(chat_context.messages[0].content, "Hello")
         self.assertEqual(chat_context.messages[1].content, "Hi")
+
+    def test_remove_stale_messages(self):
+        # Mock datetime to control the current time
+        with patch('TalkTurbo.ChatContext.datetime') as mock_datetime:
+            # Set the current time to a specific point
+            now = datetime(2023, 1, 1, 12, 0, 0)
+            mock_datetime.utcnow.return_value = now
+
+            # Create a ChatContext with a TTL of 1 hour
+            chat_context = ChatContext(ttl_hours=1)
+            
+            # Add a message that is just within the TTL
+            fresh_message = UserMessage("Fresh message")
+            fresh_message.created_on_utc = now - timedelta(minutes=59)
+            chat_context.add_message(fresh_message)
+
+            # Add a message that is outside the TTL
+            stale_message = UserMessage("Stale message")
+            stale_message.created_on_utc = now - timedelta(hours=1, minutes=1)
+            chat_context.add_message(stale_message)
+
+            # Check if stale messages are removed correctly
+            self.assertEqual(len(chat_context.messages), 1)
+            self.assertEqual(chat_context.messages[0].content, fresh_message.content)
 
     def test_to_dict(self):
         chat_context = ChatContext()
