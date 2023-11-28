@@ -3,6 +3,11 @@ class Categories:
         for attr, value in vars(self).items():
             yield (attr, value)
 
+    def __str__(self):
+        out = ""
+        for cat, val in vars(self).items():
+            out += f"{cat}: {val}"
+
 
 class CategoryFlags(Categories):
     def __init__(
