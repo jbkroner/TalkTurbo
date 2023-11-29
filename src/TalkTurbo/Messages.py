@@ -32,9 +32,6 @@ class Message:
 
 
 class ContentMessage(Message):
-    load_dotenv()
-    _OPENAI_KEY = os.getenv("OPENAI_SECRET_KEY")
-
     def __init__(self, role: MessageRole, content: str, name: str = None):
         super().__init__(role)
         self.content = content
@@ -56,15 +53,6 @@ class ContentMessage(Message):
 
     def moderate(self):
         """moderate this message"""
-        moderation_response = requests.post(
-            url="https://api.openai.com/v1/moderations",
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {ContentMessage._OPENAI_KEY}",
-            },
-            json={"input": self.content, "model": "text-moderation-latest"},
-        )
-
         moderation_response = OPENAI_CLIENT.moderations.create(
             input=self.content, model="text-moderation-latest"
         )
