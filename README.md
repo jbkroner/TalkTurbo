@@ -1,6 +1,6 @@
 # TalkTurbo
 
-TalkTurbo is a lightweight chatbot platform for Discord that queries the OpenAI GPT 3.5 Turbo model.  TalkTurbo features simple controls for system prompting, context management, response length, and temperature.  It also utilizes the OpenAI Moderation Endpoint to protect your API key from abuse.   
+TalkTurbo is a lightweight chatbot platform for Discord that queries the OpenAI GPT 3.5 Turbo model.  TalkTurbo features simple controls for system prompting, context management, and Dalle-E image generation.  It also utilizes the OpenAI Moderation Endpoint to protect your API key from abuse.   
 
 Once TalkTurbo is added to your server you can talk to the bot by @ing it or using the slash commands.
 
@@ -67,4 +67,4 @@ The `gpt-3.5-turbo` model supports a context of up to 4096 tokens.  You may incr
 
 ## Moderation
 
-All system prompts and messages sent to Turbo are routed through the [OpenAI Moderation Endpoint](https://platform.openai.com/docs/guides/moderation). If any of the listed categories return as `true` then the message is not passed along to the gpt model and the user is warned.
+All system prompts and messages sent to Turbo are routed through the [OpenAI Moderation Endpoint](https://platform.openai.com/docs/guides/moderation). Messages track their own moderation data and you can quickly check a messages moderation status with `message.flagged()`.
