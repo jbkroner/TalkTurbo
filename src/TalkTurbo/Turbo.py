@@ -172,18 +172,15 @@ def turbo_query_helper(
         f"interaction {id} - query helper working request from {hashed_user_identifier}"
     )
 
-    # moderation
-    max_category, max_score = OpenAIModelAssistant.get_moderation_score(
-        message=query, openai_secret_key=OPENAI_SECRET_TOKEN
-    )
-    if max_category:
-        logger.info(
-            f"interaction {id} - content moderation threshold breached. category: {max_category}, score: {max_score}"
-        )
-        return f"_(turbos host here: you've breached the content moderation threshold breached - category: {max_category} - score: {max_score}.  Keep it safe and friendly please!)_"
-
     # add user message to the context
     message = UserMessage(content=query)
+
+    # check for content violations
+    if message.flagged():
+        logger.info('interaction %s - message flagged content', id)
+        return AssistantMessage(f"_(turbos host here: you've breached the content moderation threshold.  Keep it safe and friendly please!)_")
+    logger.info('interaction %s - message not flagged for content. proceeding with query.')
+
     chat_context.add_message(message)
     logger.debug(f"interaction {id} - context updated with user query")
 
@@ -196,10 +193,6 @@ def turbo_query_helper(
         prompt=query,
         hashed_user_identifier=hashed_user_identifier,
         openai_secret_key=OPENAI_SECRET_TOKEN,
-    )
-
-    logger.info(
-        f"interaction {id}: received moderation score for query from {hashed_user_identifier}.  Category: {max_category}. Score: {max_score}"
     )
 
     turbo_response = (

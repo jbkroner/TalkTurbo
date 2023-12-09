@@ -16,7 +16,6 @@ joblib==1.2.0
 multidict==6.0.4
 mypy-extensions==1.0.0
 nltk==3.8.1
-openai==0.27.2
 packaging==23.0
 pathspec==0.11.1
 platformdirs==3.2.0
@@ -29,3 +28,4 @@ tomli==2.0.1
 tqdm==4.65.0
 urllib3==1.26.15
 yarl==1.8.2
+openai~=1.3
