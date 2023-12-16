@@ -14,6 +14,7 @@ from TalkTurbo.LoggerGenerator import LoggerGenerator
 from TalkTurbo.ChatContext import ChatContext
 from TalkTurbo.Messages import AssistantMessage, SystemMessage, UserMessage
 from TalkTurbo.OpenAIModelAssistant import OpenAIModelAssistant
+from TalkTurbo.TurboGuild import TurboGuild, TurboGuildMap
 
 
 import discord
@@ -146,6 +147,9 @@ if args.system_prompt:
 
 chat_context = ChatContext(system_prompt=DEFAULT_SYSTEM_PROMPT, max_tokens=2048)
 
+# create a new guild map
+guild_map = TurboGuildMap()
+
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -177,9 +181,13 @@ def turbo_query_helper(
 
     # check for content violations
     if message.flagged():
-        logger.info('interaction %s - message flagged content', id)
-        return AssistantMessage(f"_(turbos host here: you've breached the content moderation threshold.  Keep it safe and friendly please!)_")
-    logger.info('interaction %s - message not flagged for content. proceeding with query.')
+        logger.info("interaction %s - message flagged content", id)
+        return AssistantMessage(
+            f"_(turbos host here: you've breached the content moderation threshold.  Keep it safe and friendly please!)_"
+        )
+    logger.info(
+        "interaction %s - message not flagged for content. proceeding with query."
+    )
 
     chat_context.add_message(message)
     logger.debug(f"interaction {id} - context updated with user query")
@@ -205,7 +213,6 @@ def turbo_query_helper(
             chat_context.add_message(turbo_response)
         except KeyError:
             response = turbo_response
-
 
     logger.info(
         f"interaction {id} - response to {hashed_user_identifier} received from OpenAI"
@@ -310,9 +317,11 @@ async def generate_image(
 
     # catch problems with image generation
     if not image_path:
-        logger.warning(f"interaction {interaction_id}: caught problem with image gen response")
+        logger.warning(
+            f"interaction {interaction_id}: caught problem with image gen response"
+        )
         response = turbo_query_helper(
-            query="START SYSTEM MESSAGE"    
+            query="START SYSTEM MESSAGE"
             "This message is coming from your host server."
             "A user tried to generate a dalle image but the process failed."
             "Please concisely inform the user of this error."
@@ -321,7 +330,7 @@ async def generate_image(
             "They should be nice to deep neural networks!"
             "END SYSTEM MESSAGE",
             id=interaction_id,
-            hashed_user_identifier=hashed_user_identifier # this probably should be an ADMIN or SYSTEM id
+            hashed_user_identifier=hashed_user_identifier,  # this probably should be an ADMIN or SYSTEM id
         )
         await interaction.followup.send(content=response)
         logger.info(f"interaction {interaction_id}: resolved")
@@ -345,10 +354,12 @@ async def generate_image(
         "The image will be included with your response."
         "END SYSTEM MESSAGE",
         id=interaction_id,
-        hashed_user_identifier=hashed_user_identifier
+        hashed_user_identifier=hashed_user_identifier,
     )
 
-    await interaction.followup.send(content=prompt_response.content, file=discord.File(image_path))
+    await interaction.followup.send(
+        content=prompt_response.content, file=discord.File(image_path)
+    )
 
     # clean up dalle file if requested
     if args.disable_image_storage:
@@ -358,6 +369,7 @@ async def generate_image(
         )
 
     logger.info(f"interaction {interaction_id}: resolved")
+
 
 @bot.tree.command(
     name="generate_image_dalle_3",
@@ -420,14 +432,16 @@ async def generate_image(
         query=query,
         openai_secret_key=OPENAI_SECRET_TOKEN,
         hashed_user_identifier=hashed_user_identifier,
-        use_dalle_3=True
+        use_dalle_3=True,
     )
 
     # catch problems with image generation
     if not image_path:
-        logger.warning(f"interaction {interaction_id}: caught problem with image gen response")
+        logger.warning(
+            f"interaction {interaction_id}: caught problem with image gen response"
+        )
         response = turbo_query_helper(
-            query="SYSTEM MESSAGE"    
+            query="SYSTEM MESSAGE"
             "This message is coming from your host server."
             "A user tried to generate a dalle image but the process failed."
             "Please concisely inform the user of this error."
@@ -436,7 +450,7 @@ async def generate_image(
             "They should be nice to deep neural networks!"
             "END SYSTEM MESSAGE",
             id=interaction_id,
-            hashed_user_identifier=hashed_user_identifier # this probably should be an ADMIN or SYSTEM id
+            hashed_user_identifier=hashed_user_identifier,  # this probably should be an ADMIN or SYSTEM id
         )
         await interaction.followup.send(content=response)
         logger.info(f"interaction {interaction_id}: resolved")
@@ -460,10 +474,12 @@ async def generate_image(
         "The image will be included with your response."
         "END SYSTEM MESSAGE",
         id=interaction_id,
-        hashed_user_identifier=hashed_user_identifier
+        hashed_user_identifier=hashed_user_identifier,
     )
 
-    await interaction.followup.send(content=prompt_response.content,file=discord.File(image_path))
+    await interaction.followup.send(
+        content=prompt_response.content, file=discord.File(image_path)
+    )
 
     # clean up dalle file if requested
     if args.disable_image_storage:
