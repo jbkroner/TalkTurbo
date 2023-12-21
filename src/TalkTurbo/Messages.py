@@ -18,13 +18,16 @@ class FlaggedContentError(Exception):
     def __init__(
         self,
         message="content breached moderation threshold",
+        content="",
         violation_category="not specified",
     ):
         self.message = message
+        self.content = content
+        self.violation_category = violation_category
         super().__init__(self.message)
 
     def __str__(self):
-        return f"ContentFlaggedError: {self.message}, flagged category: {self.violation_category}"
+        return f"ContentFlaggedError: {self.message}, flagged category: {self.violation_category}, content: {self.content}"
 
 
 class MessageRole(Enum):
@@ -64,7 +67,7 @@ class ContentMessage(Message):
     def to_completion_dict(self) -> dict:
         return {"role": self.role.value, "content": self.content}
 
-    def moderate(self, raise_if_flagged=False):
+    def moderate(self):
         """moderate this message"""
         moderation_response = OPENAI_CLIENT.moderations.create(
             input=self.content, model="text-moderation-latest"
