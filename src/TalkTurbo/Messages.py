@@ -14,6 +14,19 @@ from TalkTurbo import OPENAI_CLIENT
 ENCODER = tiktoken.get_encoding("cl100k_base")
 
 
+class FlaggedContentError(Exception):
+    def __init__(
+        self,
+        message="content breached moderation threshold",
+        violation_category="not specified",
+    ):
+        self.message = message
+        super().__init__(self.message)
+
+    def __str__(self):
+        return f"ContentFlaggedError: {self.message}, flagged category: {self.violation_category}"
+
+
 class MessageRole(Enum):
     SYSTEM = "system"
     USER = "user"
@@ -51,7 +64,7 @@ class ContentMessage(Message):
     def to_completion_dict(self) -> dict:
         return {"role": self.role.value, "content": self.content}
 
-    def moderate(self):
+    def moderate(self, raise_if_flagged=False):
         """moderate this message"""
         moderation_response = OPENAI_CLIENT.moderations.create(
             input=self.content, model="text-moderation-latest"
