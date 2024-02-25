@@ -5,15 +5,15 @@ import logging
 
 
 class TurboGuild:
-    def __init__(self, id, chat_context=ChatContext()) -> None:
+    def __init__(self, id, chat_context: ChatContext = None) -> None:
         self.id = id
-        self.chat_context = chat_context
+        self.chat_context = chat_context or ChatContext()
 
 
 class TurboGuildMap:
     def __init__(self, guild_map: dict[str, TurboGuild] = {}) -> None:
         self._guild_map: dict[str, TurboGuild] = guild_map
-        self._logger = logging.getLogger(__package__)
+        self._logger = logging.getLogger("Turbo")
         self._logger.info("created new turbo guild map!")
 
     def get(self, id: str) -> TurboGuild:
@@ -24,6 +24,10 @@ class TurboGuildMap:
         # a db, not just construct a bare TurboGuild
         if not guild:
             self._logger.info(
-                "could not find guild %s, adding new TurboGuild instance to guild map"
+                "could not find guild %s, adding new TurboGuild instance to guild map",
+                id,
             )
             self._guild_map[id] = TurboGuild(id)
+            guild = self._guild_map.get(id)
+
+        return guild

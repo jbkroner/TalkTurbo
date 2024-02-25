@@ -1,7 +1,5 @@
 from enum import Enum
 from datetime import datetime
-import os
-import requests
 import tiktoken
 from dotenv import load_dotenv
 import json
@@ -12,22 +10,6 @@ from TalkTurbo import OPENAI_CLIENT
 # api ref: https://platform.openai.com/docs/api-reference/chat/create
 
 ENCODER = tiktoken.get_encoding("cl100k_base")
-
-
-class FlaggedContentError(Exception):
-    def __init__(
-        self,
-        message="content breached moderation threshold",
-        content="",
-        violation_category="not specified",
-    ):
-        self.message = message
-        self.content = content
-        self.violation_category = violation_category
-        super().__init__(self.message)
-
-    def __str__(self):
-        return f"ContentFlaggedError: {self.message}, flagged category: {self.violation_category}, content: {self.content}"
 
 
 class MessageRole(Enum):
@@ -110,6 +92,13 @@ class ContentMessage(Message):
 
         return self._category_scores
 
+    def get_max_category(self) -> str:
+        """
+        Returns:
+            The highest scoring category.
+        """
+        return max(self.get_category_scores())
+
 
 class SystemMessage(ContentMessage):
     def __init__(self, content: str, name: str = None):
@@ -155,3 +144,12 @@ class FunctionMessage(Message):
 class ToolMessage(Message):
     def __init__(self, role: MessageRole):
         raise NotImplementedError()
+
+
+class FlaggedContentError(Exception):
+    def __init__(self, content_message: ContentMessage):
+        self.content_message = content_message
+        super().__init__(f"message f{self.content_message} flagged for content")
+
+    def __str__(self):
+        return f"ContentFlaggedError: flagged category: {self.content_message.get_max_category()}, content: {self.content_message.content}"
