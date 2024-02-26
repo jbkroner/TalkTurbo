@@ -74,22 +74,10 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-def get_log_level_from_arg(arg: str) -> int:
-    """
-    Get the log level from the command line argument.
-    If the argument is invalid, raise a ValueError.
-    """
-    log_level = getattr(logging, arg.upper(), None)
-    if not isinstance(log_level, int):
-        raise ValueError(f"Invalid log level: {args.loglevel}")
-    return log_level
-
-
-log_level = get_log_level_from_arg(args.logging_level)
-
 # logging
-logger = LoggerGenerator.create_logger(logger_name="Turbo", log_level=log_level)
-logger.info("logging level set to %s", log_level)
+logger = LoggerGenerator.create_logger(
+    logger_name="Turbo", log_level=logging.DEBUG if args.debug else logging.INFO
+)
 
 # load secrets from the .env file
 load_dotenv()
@@ -129,7 +117,7 @@ bot = commands.Bot(command_prefix="!", intents=intents, log_level=logging.INFO)
 def on_message_helper(
     discord_message: discord.Message, system_message: str = None
 ) -> str:
-    logger = logging.getLogger(__package__)
+    log = logging.getLogger("Turbo")
 
     guild = guild_map.get(discord_message.guild.id)
 
@@ -137,7 +125,7 @@ def on_message_helper(
     if system_message:
         discord_message.content = system_message
 
-    logger.debug(
+    log.debug(
         "interaction %s - guild: %s: message: %s",
         discord_message.id,
         guild.id,
@@ -150,15 +138,16 @@ def on_message_helper(
 
     # check for content violations
     if message.flagged():
-        logger.info("interaction %s - message flagged content", discord_message.id)
+        log.info("interaction %s - message flagged content", discord_message.id)
         return AssistantMessage(
             (
                 "_(turbos host here: you've breached the content moderation threshold."
                 "  Keep it safe and friendly please!)_"
             )
         )
-    logger.info(
-        "interaction %s - message not flagged for content. proceeding with query."
+    log.info("interaction %s - message not flagged for content. proceeding with query.")
+    log.debug(
+        "context for guild %s: %s", guild.id, guild.chat_context.get_messages_as_list()
     )
 
     # query the model
@@ -166,7 +155,7 @@ def on_message_helper(
         message=message, turbo_guild=guild
     )
 
-    logger.info(
+    log.info(
         "context for guild %s: %s", guild.id, guild.chat_context.get_messages_as_list()
     )
 

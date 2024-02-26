@@ -13,7 +13,6 @@ Once TalkTurbo is added to your server you can talk to the bot by @ing it or usi
     ```
     DISCORD_SECRET_KEY=<discord_secret_key>
     OPENAI_SECRET_KEY=<openai_secret_key>
-    GUILD_ID=<target_guild_id> # optional, sync app commands with this server
     ```  
 - Alternatively:
     - Export your keys as enviroment vars:
@@ -27,21 +26,15 @@ Once TalkTurbo is added to your server you can talk to the bot by @ing it or usi
 ## Run with Docker
 The docker image is not currently distributed on the Docker hub but it is easy to build locally.
 - Clone this repo and `cd` into it. 
-- Build the container: `docker build -t turbo .`
-- Run the container: `docker run -d --env-file .env turbo`
+- Build the container: `docker build -t turbo:latest .`
+- Run the container: `docker run -d --env-file .env turbo:latest`
 
 
 ## Args
 
 `-h`, `--help` - show this help message and exit
   
-`-s`, `--system-prompt` - system prompt to initialize the bot with.
-  
-`-t`, `--temperature` - sampling temperature, in range [0, 2.0].  A lower temperature will give more deterministic responses.  Default is .7.
-
-`-m` , `--max-response-length` - Max response length in tokens.  Defaults to 100.
-
-`--sync-app-commands` - Sync new or udpated app commands with Discord 
+`--sync-app-commands` - Sync new or udpated app commands with Discord.  This will sync commands globally with all guilds that your instance of Turbo has joined. 
 
 `--no-user-identifier` - Do *not* send a user's unique hash to OpenAI with each request. 
 
@@ -50,13 +43,9 @@ The docker image is not currently distributed on the Docker hub but it is easy t
 ## Slash Commands
 Slash commands can be used within a Discord server to control the bot.
 
-`/generate_image` - enter a prompt and generate a DALL-E image.  Timeout defaults to 60 seconds.
-
-`/generate_image_dalle_3` - enter a prompt and generate a DALL-E-3 image.  Timeout defaults to 60 seconds.
+`/generate_image_dalle_3` - enter a prompt and generate a DALL-E-3 image.
 
 `/estop` - shut down the bot. use at your discretion if you spot spam, abuse, or other problems. 
-
-`/clear_context` - clear the bot's context (except for the system prompt)
 
 ## Notes on Context Tracking
 The bot tracks the 'context' of a conversation so that replies stay on topic.  Also included in the context is the system prompt.  Currently the context is set to a max length of 1024 tokens.  During every exchange with the bot the most recent message + response are appended to the context.  If the length goes over the limit then the oldest messages are removed from the context until the context fits within the max allowed length.  Messages older than 24 hours are also dropped. The system prompt is never removed from the context. 
