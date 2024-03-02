@@ -145,7 +145,11 @@ def on_message_helper(
                 "  Keep it safe and friendly please!)_"
             )
         )
-    log.info("interaction %s - message not flagged for content. proceeding with query.")
+    log.info(
+        "guild %s :: interaction %s :: message not flagged for content. proceeding with query.",
+        discord_message.guild.name,
+        discord_message.id,
+    )
     log.debug(
         "context for guild %s: %s", guild.id, guild.chat_context.get_messages_as_list()
     )
@@ -155,27 +159,24 @@ def on_message_helper(
         message=message, turbo_guild=guild
     )
 
-    log.info(
-        "context for guild %s: %s", guild.id, guild.chat_context.get_messages_as_list()
-    )
-
     return model_response_text
 
 
 # events
 @bot.event
 async def on_ready():
-    logger.info("bot logged in as %s", bot.user)
+    log = logging.getLogger("Turbo")
+    log.info("bot logged in as %s", bot.user)
 
     if args.sync_app_commands:
+        log.info("syncing app commands")
         await bot.tree.sync()  # sync commands globally
 
 
 @bot.listen()
 async def on_message(message: discord.Message):
     if bot.user.mentioned_in(message=message) and not message.author.bot:
-        logger = logging.getLogger(__package__)
-
+        logger = logging.getLogger("Turbo")
         logger.debug(
             "bot mentioned in message %s in guild %s", message.content, message.guild
         )
@@ -192,7 +193,7 @@ async def generate_image(
     *,
     query: str,
 ):
-    logger = logging.getLogger(__package__)
+    log = logging.getLogger("Turbo")
 
     interaction_id = interaction.id
 
@@ -214,6 +215,12 @@ async def generate_image(
         )
         return
 
+    log.info(
+        "guild %s :: interaction %s :: image prompt not flagged for content. proceeding with query.",
+        interaction.guild.name,
+        interaction.id,
+    )
+
     # query dalle3, get a path to the generated image
     image_path = assistant.query_dalle(
         query=query,
@@ -223,11 +230,12 @@ async def generate_image(
 
     # catch problems with image generation
     if not image_path:
-        logger.warning("dalle did not return an image path")
+        log.warning("dalle did not return an image path")
         no_image_response = assistant.get_chat_completion(
             message=SystemMessage(
                 "the previous message did not return a response from the model"
                 f"the prompt was: {query}"
+                "please include the prompt (or similiar) in your reply."
             ),
             turbo_guild=guild,
         )
@@ -262,13 +270,13 @@ async def generate_image(
     # clean up dalle file if requested
     if args.disable_image_storage:
         os.remove(path=image_path)
-        logger.info(
+        log.info(
             "interaction %s: unlinking image stored at %s",
             interaction_id,
             image_path,
         )
 
-    logger.info("interaction %s: resolved", interaction_id)
+    log.info("interaction %s: resolved", interaction_id)
 
 
 @bot.tree.command(

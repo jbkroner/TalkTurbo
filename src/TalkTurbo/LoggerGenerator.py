@@ -7,7 +7,7 @@ class LoggerGenerator:
     def create_logger(
         logger_name,
         log_level=logging.INFO,
-        log_format="%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s",
+        log_format="%(asctime)s :: %(name)s :: %(levelname)s :: %(funcName)s :: %(message)s",
         filename="discord.log",
         max_bytes=10 * 1024 * 1024,
         backup_count=5,

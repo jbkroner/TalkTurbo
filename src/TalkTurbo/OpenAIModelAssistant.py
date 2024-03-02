@@ -52,7 +52,7 @@ class OpenAIModelAssistant:
         Returns the response content or an error string informing the user that
         Something went wrong with the request.
         """
-        logger = logging.getLogger(__package__)
+        logger = logging.getLogger("Turbo")
 
         if message.flagged():
             return (
