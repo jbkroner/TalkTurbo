@@ -6,6 +6,9 @@ from abc import ABC, abstractmethod
 
 
 class ApiAdapter(ABC):
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+
     @property
     @abstractmethod
     def api_key(self) -> str:
