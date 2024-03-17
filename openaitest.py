@@ -1,4 +1,5 @@
 import os
+import time
 
 from TalkTurbo.ApiAdapters.OpenAIAdapter import OpenAIAdapter
 from TalkTurbo.ApiAdapters.AnthropicAdapter import AnthropicAdapter
@@ -15,26 +16,32 @@ cc = ChatContext()
 
 adapter = OpenAIAdapter(OPENAI_KEY)
 
-cc.add_message(UserMessage("Hello, how are you?"))
+cc.add_message(UserMessage("Hi! Tell me about yourself."))
 
 print(cc.get_messages_as_list())
 
+start = time.time()
 response = adapter.get_chat_completion(cc)
-print("OpenAI GPT 3.5 Turbo ->")
+end = time.time()
+print(f"OpenAI GPT 3.5 Turbo -> {end - start:.2f} seconds")
 print(response.content)
 
-print("trying anthropic adapter...")
+# print("\ntrying anthropic adapter...")
 
-ant_adapter = AnthropicAdapter(ANT_KEY)
+# ant_adapter = AnthropicAdapter(ANT_KEY)
 
-response = ant_adapter.get_chat_completion(cc)
+# start = time.time()
+# response = ant_adapter.get_chat_completion(cc)
+# end = time.time()
 
-print("Anthropic Claude 3 Opus ->")
-print(response.content)
+# print(f"Anthropic Claude 3 Opus {end - start:.2f} seconds ->")
+# print(response.content)
 
 
-print("trying google adapter...")
+print("\ntrying google adapter...")
 g_adapter = GoogleAdapter(os.environ.get("GOOGLE_SECRET_KEY", None))
-print("google auth complete")  # TODO <_ default credentials?
+start = time.time()
 response = g_adapter.get_chat_completion(cc)
-print(response)
+end = time.time()
+print(f"Google Gemini Pro -> {end - start:.2} seconds")
+print(response.content)
