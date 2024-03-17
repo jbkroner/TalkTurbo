@@ -14,7 +14,6 @@ class AnthropicAdapter(ApiAdapter):
     ):
         self._api_token = token
         self._logger = logger
-        print(self._api_token)
         self._model = "claude-3-opus-20240229"
         self._anthropic_client = Anthropic(api_key=self._api_token)
 
