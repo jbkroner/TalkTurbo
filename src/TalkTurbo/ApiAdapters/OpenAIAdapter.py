@@ -9,20 +9,12 @@ import logging
 
 class OpenAIAdapter(ApiAdapter):
     def __init__(
-        self, token: str, logger: logging.Logger = logging.getLogger(__package__)
+        self, api_token: str, logger: logging.Logger = logging.getLogger(__package__)
     ):
-        self._api_token = token
+        super().__init__(api_token=api_token)
         self._logger = logger
         self._model = "gpt-3.5-turbo"
-        self._open_ai_client = OpenAI(api_key=token)
-
-    @property
-    def _token(self) -> str:
-        return self._api_token
-
-    @_token.setter
-    def _token(self, value: str) -> None:
-        self._token = value
+        self._open_ai_client = OpenAI(api_key=self._api_token)
 
     def get_chat_completion(self, context: ChatContext) -> ContentMessage:
         """
