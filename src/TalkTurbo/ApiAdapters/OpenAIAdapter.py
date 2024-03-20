@@ -1,4 +1,5 @@
 from TalkTurbo import ChatContext
+from TalkTurbo.ApiAdapters.ModelDescription import ModelDescription
 from TalkTurbo.ApiAdapters.ApiAdapter import ApiAdapter
 from TalkTurbo.Messages import ContentMessage, SystemMessage, MessageFactory
 
@@ -8,12 +9,18 @@ import logging
 
 
 class OpenAIAdapter(ApiAdapter):
-    def __init__(
-        self, api_token: str, logger: logging.Logger = logging.getLogger(__package__)
-    ):
-        super().__init__(api_token=api_token)
-        self._logger = logger
-        self._model = "gpt-3.5-turbo"
+    def __init__(self, api_token: str, models: list[ModelDescription] = None):
+        models = models or [
+            # https://platform.openai.com/docs/models/gpt-3-5-turbo
+            ModelDescription(
+                model_name="gpt-3.5-turbo-0125",
+                max_input_tokens=16385,
+                max_output_tokens=4096,
+            )
+        ]
+
+        super().__init__(api_token=api_token, models=models)
+
         self._open_ai_client = OpenAI(api_key=self._api_token)
 
     def get_chat_completion(self, context: ChatContext) -> ContentMessage:
@@ -32,7 +39,7 @@ class OpenAIAdapter(ApiAdapter):
             Something went wrong with the request.
         """
         completion = self._open_ai_client.chat.completions.create(
-            messages=context.get_messages_as_list(), model=self._model
+            messages=context.get_messages_as_list(), model=self.models[0].model_name
         )
 
         if not completion:

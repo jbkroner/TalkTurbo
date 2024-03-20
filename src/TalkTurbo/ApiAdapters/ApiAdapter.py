@@ -1,14 +1,16 @@
 """Generic interface for interacting with LLM SDKs"""
 
+from TalkTurbo.ApiAdapters.ModelDescription import ModelDescription
 from TalkTurbo.Messages import ContentMessage
 from TalkTurbo.ChatContext import ChatContext
 from abc import ABC, abstractmethod
 
 
 class ApiAdapter(ABC):
-    def __init__(self, api_token) -> None:
+    def __init__(self, api_token: str, models: list[ModelDescription]) -> None:
         super().__init__()
         self._api_token = api_token
+        self.models = models
 
     @abstractmethod
     def get_chat_completion(self, context: ChatContext) -> ContentMessage:

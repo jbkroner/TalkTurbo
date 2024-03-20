@@ -1,10 +1,10 @@
 from TalkTurbo import ChatContext
 from TalkTurbo.ApiAdapters.ApiAdapter import ApiAdapter
+from TalkTurbo.ApiAdapters.ModelDescription import ModelDescription
 
 from anthropic import Anthropic
 from anthropic.types.message import Message as AnthropicMessage
 
-import logging
 
 from TalkTurbo.Messages import (
     ContentMessage,
@@ -16,11 +16,31 @@ from TalkTurbo.Messages import (
 
 class AnthropicAdapter(ApiAdapter):
     def __init__(
-        self, api_token: str, logger: logging.Logger = logging.getLogger(__package__)
+        self,
+        api_token: str,
+        models: list[ModelDescription] = None,
     ):
-        super().__init__(api_token=api_token)
-        self._logger = logger
-        self._model = "claude-3-opus-20240229"
+
+        models = models or [
+            ModelDescription(
+                model_name="claude-3-opus-20240229",
+                max_input_tokens=200000,
+                max_output_tokens=4096,
+            ),
+            ModelDescription(
+                model_name="claude-3-sonnet-20240229",
+                max_input_tokens=200000,
+                max_output_tokens=4096,
+            )
+            ModelDescription(
+                model_name="claude-3-haiku-20240307",
+                max_input_tokens=200000,
+                max_output_tokens=4096,
+            )
+        ]
+
+        super().__init__(api_token=api_token, models=models)
+
         self._anthropic_client = Anthropic(api_key=self._api_token)
 
     def get_chat_completion(self, context: ChatContext) -> ContentMessage:
@@ -28,7 +48,7 @@ class AnthropicAdapter(ApiAdapter):
             context.get_messages_as_list()
         )
         completion = self._anthropic_client.messages.create(
-            max_tokens=1024, messages=cleaned_context, model=self._model
+            max_tokens=1024, messages=cleaned_context, model=self.models[0].model_name
         )
 
         if not completion:
