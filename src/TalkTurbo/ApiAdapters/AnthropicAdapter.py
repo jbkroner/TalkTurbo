@@ -31,12 +31,12 @@ class AnthropicAdapter(ApiAdapter):
                 model_name="claude-3-sonnet-20240229",
                 max_input_tokens=200000,
                 max_output_tokens=4096,
-            )
+            ),
             ModelDescription(
                 model_name="claude-3-haiku-20240307",
                 max_input_tokens=200000,
                 max_output_tokens=4096,
-            )
+            ),
         ]
 
         super().__init__(api_token=api_token, models=models)
