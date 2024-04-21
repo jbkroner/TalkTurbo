@@ -1,10 +1,10 @@
-from TalkTurbo import ChatContext
-from TalkTurbo.ApiAdapters.ApiAdapter import ApiAdapter
-from TalkTurbo.Messages import ContentMessage, SystemMessage, MessageFactory
+import logging
 
 from openai import OpenAI
 
-import logging
+from TalkTurbo import ChatContext
+from TalkTurbo.ApiAdapters.ApiAdapter import ApiAdapter
+from TalkTurbo.Messages import ContentMessage, MessageFactory, SystemMessage
 
 
 class OpenAIAdapter(ApiAdapter):
