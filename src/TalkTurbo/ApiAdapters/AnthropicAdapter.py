@@ -2,6 +2,7 @@ from anthropic import Anthropic
 from anthropic.types.message import Message as AnthropicMessage
 
 from TalkTurbo import ChatContext
+from TalkTurbo.ApiAdapters import ApiAdapter
 from TalkTurbo.Messages import ContentMessage, MessageFactory, SystemMessage
 
 
