@@ -1,34 +1,30 @@
-from TalkTurbo import ChatContext
-from TalkTurbo.ApiAdapters.ApiAdapter import ApiAdapter
+import logging
 
 from anthropic import Anthropic
 from anthropic.types.message import Message as AnthropicMessage
 
-import logging
-
-from TalkTurbo.Messages import (
-    ContentMessage,
-    MessageFactory,
-    MessageRole,
-    SystemMessage,
-)
+from TalkTurbo import ChatContext
+from TalkTurbo.ApiAdapters.ApiAdapter import ApiAdapter
+from TalkTurbo.Messages import ContentMessage, MessageFactory, SystemMessage
 
 
 class AnthropicAdapter(ApiAdapter):
+    """Adapter for Anthropic's API."""
+
     def __init__(
-        self, api_token: str, logger: logging.Logger = logging.getLogger(__package__)
+        self,
+        api_token: str,
+        max_tokens: int = 1024,
+        model_name: str = "claude-3-opus-20240229",
     ):
-        super().__init__(api_token=api_token)
-        self._logger = logger
-        self._model = "claude-3-opus-20240229"
-        self._anthropic_client = Anthropic(api_key=self._api_token)
+        super().__init__(api_token=api_token, model_name=model_name, max_tokens=1024)
+        self._anthropic_client = Anthropic(api_key=self.api_token)
 
     def get_chat_completion(self, context: ChatContext) -> ContentMessage:
-        cleaned_context = self._remove_system_messages_from_context(
-            context.get_messages_as_list()
-        )
+        cleaned_context = self.convert_context_to_api_format(context)
+
         completion = self._anthropic_client.messages.create(
-            max_tokens=1024, messages=cleaned_context, model=self._model
+            max_tokens=1024, messages=cleaned_context, model=self.model_name
         )
 
         if not completion:
@@ -39,6 +35,9 @@ class AnthropicAdapter(ApiAdapter):
         message, role = self._get_content_and_role_from_anthropic_message(completion)
 
         return MessageFactory.create_message(message, role)
+
+    def convert_context_to_api_format(self, context: ChatContext):
+        return self._remove_system_messages_from_context(context.get_messages_as_list())
 
     def _get_content_and_role_from_anthropic_message(
         self, anthropic_message: AnthropicMessage

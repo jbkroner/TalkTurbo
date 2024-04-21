@@ -8,13 +8,18 @@ from TalkTurbo.Messages import ContentMessage, MessageFactory, SystemMessage
 
 
 class OpenAIAdapter(ApiAdapter):
+    """Adapter for OpenAI's API."""
+
     def __init__(
-        self, api_token: str, logger: logging.Logger = logging.getLogger(__package__)
+        self,
+        api_token: str,
+        model_name: str = "gpt-3.5-turbo",
+        max_tokens=1024,
     ):
-        super().__init__(api_token=api_token)
-        self._logger = logger
-        self._model = "gpt-3.5-turbo"
-        self._open_ai_client = OpenAI(api_key=self._api_token)
+        super().__init__(
+            api_token=api_token, model_name=model_name, max_tokens=max_tokens
+        )
+        self._open_ai_client = OpenAI(api_key=self.api_token)
 
     def get_chat_completion(self, context: ChatContext) -> ContentMessage:
         """
@@ -32,7 +37,7 @@ class OpenAIAdapter(ApiAdapter):
             Something went wrong with the request.
         """
         completion = self._open_ai_client.chat.completions.create(
-            messages=context.get_messages_as_list(), model=self._model
+            messages=context.get_messages_as_list(), model=self.model_name
         )
 
         if not completion:
@@ -43,3 +48,6 @@ class OpenAIAdapter(ApiAdapter):
         response = completion.choices[0].message
 
         return MessageFactory.create_message(response.content, response.role)
+
+    def convert_context_to_api_format(self, context: ChatContext):
+        return context.get_messages_as_list()
