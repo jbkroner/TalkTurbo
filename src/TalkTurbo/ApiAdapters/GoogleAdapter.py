@@ -1,7 +1,6 @@
 import google.generativeai as genai
 
 from TalkTurbo.ApiAdapters.ApiAdapter import ApiAdapter
-from TalkTurbo.ApiAdapters.ModelDescription import ModelDescription
 from TalkTurbo.ChatContext import ChatContext
 from TalkTurbo.Messages import AssistantMessage, ContentMessage, MessageRole
 
