@@ -25,8 +25,15 @@ class GoogleAdapter(ApiAdapter):
         return AssistantMessage(content=response.text)
 
     def convert_context_to_api_format(self, context: ChatContext):
-        return [
+        cc_list = [
             {"role": message.role.value, "parts": [message.content]}
             for message in context.messages
             if message.role in [MessageRole.USER, MessageRole.ASSISTANT]
         ]
+
+        # :(
+        for message in cc_list:
+            if message["role"] == MessageRole.ASSISTANT.value:
+                message["role"] = "model"
+
+        return cc_list
