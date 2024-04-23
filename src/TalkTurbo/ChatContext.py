@@ -19,7 +19,7 @@ class ChatContext:
         self,
         messages: List[ContentMessage] = None,
         system_prompt: SystemMessage = SystemMessage(""),
-        max_tokens: int = 1024,
+        max_tokens: int = 4096,
         ttl_hours: int = 24,
     ) -> None:
         if not messages:
