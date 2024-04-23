@@ -1,6 +1,6 @@
 # TalkTurbo
 
-TalkTurbo is a lightweight chatbot platform for Discord that queries the OpenAI GPT 3.5 Turbo model.  TalkTurbo features simple controls for system prompting, context management, and Dalle-E image generation.  It also utilizes the OpenAI Moderation Endpoint to protect your API key from abuse.   
+TalkTurbo is a lightweight chatbot platform for Discord that can query a variety of large language models.  TalkTurbo features simple controls for system prompting, context management, and Dalle-E image generation.  It also utilizes the OpenAI Moderation Endpoint to protect your API keys from abuse.   
 
 Once TalkTurbo is added to your server you can talk to the bot by @ing it or using the slash commands.
 
@@ -34,11 +34,11 @@ The docker image is not currently distributed on the Docker hub but it is easy t
 
 `-h`, `--help` - show this help message and exit
   
-`--sync-app-commands` - Sync new or udpated app commands with Discord.  This will sync commands globally with all guilds that your instance of Turbo has joined. 
+`--sync-app-commands` - sync new or udpated app commands with Discord.  This will sync commands globally with all guilds that your instance of Turbo has joined. 
 
-`--no-user-identifier` - Do *not* send a user's unique hash to OpenAI with each request. 
+`--no-user-identifier` - do *not* send a user's unique hash to OpenAI with each request. 
 
-`--disable-image-storage` - Do not store dalle images locally.  Image prompts and hashes may still be logged. 
+`--disable-image-storage` - do not store dalle images locally.  Image prompts and hashes may still be logged. 
 
 ## Slash Commands
 Slash commands can be used within a Discord server to control the bot.
@@ -46,6 +46,12 @@ Slash commands can be used within a Discord server to control the bot.
 `/generate_image_dalle_3` - enter a prompt and generate a DALL-E-3 image.
 
 `/estop` - shut down the bot. use at your discretion if you spot spam, abuse, or other problems. 
+
+`/list_models` - list available models.
+
+`/list_current_model` - list model turbo is currently using.
+
+`/set_model` - set the model that turbo will use.
 
 ## Notes on Context Tracking
 The bot tracks the 'context' of a conversation so that replies stay on topic.  Also included in the context is the system prompt.  Currently the context is set to a max length of 1024 tokens.  During every exchange with the bot the most recent message + response are appended to the context.  If the length goes over the limit then the oldest messages are removed from the context until the context fits within the max allowed length.  Messages older than 24 hours are also dropped. The system prompt is never removed from the context. 
@@ -56,4 +62,4 @@ The `gpt-3.5-turbo` model supports a context of up to 4096 tokens.  You may incr
 
 ## Moderation
 
-All system prompts and messages sent to Turbo are routed through the [OpenAI Moderation Endpoint](https://platform.openai.com/docs/guides/moderation). Messages track their own moderation data and you can quickly check a messages moderation status with `message.flagged()`.
+All system prompts and messages sent to Turbo are routed through the [OpenAI Moderation Endpoint](https://platform.openai.com/docs/guides/moderation).  OpenAI moderation happens regardless of which chat model Turbo is currently using. Messages track their own moderation data and you can quickly check a messages moderation status with `message.flagged()`.
