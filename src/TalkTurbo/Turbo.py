@@ -1,16 +1,18 @@
+import argparse
+import logging
+import os
 import sys
+
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-import os
-import argparse
-import logging
 
+from TalkTurbo.ApiAdapters.OpenAIAdapter import OpenAIAdapter
+from TalkTurbo.CompletionAssistant import CompletionAssistant
 from TalkTurbo.LoggerGenerator import LoggerGenerator
 from TalkTurbo.Messages import AssistantMessage, SystemMessage, UserMessage
 from TalkTurbo.OpenAIModelAssistant import OpenAIModelAssistant
 from TalkTurbo.TurboGuild import TurboGuildMap
-
 
 # command parser
 parser = argparse.ArgumentParser(description="Turbo")
@@ -94,6 +96,10 @@ assistant = OpenAIModelAssistant(
     min_dalle_timeout_in_seconds=args.dalle_timeout,
 )
 
+# initialize the completion assistant
+CompletionAssistant.set_adapter(OpenAIAdapter(api_token=OPENAI_SECRET_TOKEN))
+
+
 # bot secret prompt
 DEFAULT_SYSTEM_PROMPT = SystemMessage(
     "You are an extremely sassy and sarcastic robot who likes to give users a hard time while "
@@ -154,12 +160,15 @@ def on_message_helper(
         "context for guild %s: %s", guild.id, guild.chat_context.get_messages_as_list()
     )
 
-    # query the model
-    model_response_text = assistant.get_chat_completion(
-        message=message, turbo_guild=guild
-    )
+    guild.chat_context.add_message(message)
+    response = CompletionAssistant.get_chat_completion(context=guild.chat_context)
 
-    return model_response_text
+    # query the model
+    # model_response_text = assistant.get_chat_completion(
+    #     message=message, turbo_guild=guild
+    # )
+
+    return response.get_latest_message().content
 
 
 # events
@@ -176,8 +185,8 @@ async def on_ready():
 @bot.listen()
 async def on_message(message: discord.Message):
     if bot.user.mentioned_in(message=message) and not message.author.bot:
-        logger = logging.getLogger("Turbo")
-        logger.debug(
+        log = logging.getLogger("Turbo")
+        log.debug(
             "bot mentioned in message %s in guild %s", message.content, message.guild
         )
         response = on_message_helper(discord_message=message)
@@ -277,6 +286,33 @@ async def generate_image(
         )
 
     log.info("interaction %s: resolved", interaction_id)
+
+
+@bot.tree.command(
+    name="list_current_model",
+    description="list the model the bot is currently running.",
+)
+async def estop(interaction: discord.Interaction, reason: str = "no reason given"):
+    pass
+    # await interaction.response.send_message(f"hard stopping, cya later! ({reason})")
+
+
+# @bot.tree.command(
+#     name="list_available_models",
+#     description="list models the bot can query.  Chang with /switch_model.",
+# )
+# async def estop(interaction: discord.Interaction, reason: str = "no reason given"):
+#     pass
+#     # await interaction.response.send_message(f"hard stopping, cya later! ({reason})")
+
+
+# @bot.tree.command(
+#     name="switch_model",
+#     description="switch the model used by the bot",
+# )
+# async def estop(interaction: discord.Interaction, reason: str = "no reason given"):
+#     pass
+#     # await interaction.response.send_message(f"hard stopping, cya later! ({reason})")
 
 
 @bot.tree.command(
