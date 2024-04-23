@@ -10,6 +10,8 @@ from TalkTurbo.Messages import ContentMessage, MessageFactory, SystemMessage
 class OpenAIAdapter(ApiAdapter):
     """Adapter for OpenAI's API."""
 
+    AVAILABLE_MODELS = ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo-preview"]
+
     def __init__(
         self,
         api_token: str,

@@ -8,6 +8,8 @@ from TalkTurbo.Messages import AssistantMessage, ContentMessage, MessageRole
 class GoogleAdapter(ApiAdapter):
     """Adapter for Google's API."""
 
+    AVAILABLE_MODELS = ["gemini-pro"]
+
     def __init__(self, api_token: str):
         self.model_name = "gemini-pro"
 

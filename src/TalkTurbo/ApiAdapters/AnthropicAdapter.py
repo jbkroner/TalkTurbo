@@ -9,6 +9,12 @@ from TalkTurbo.Messages import ContentMessage, MessageFactory, SystemMessage
 class AnthropicAdapter(ApiAdapter):
     """Adapter for Anthropic's API."""
 
+    AVAILABLE_MODELS = [
+        "claude-3-opus-20240229",
+        "claude-3-sonnet-20240229",
+        "claude-3-haiku-20240307",
+    ]
+
     def __init__(
         self,
         api_token: str,
