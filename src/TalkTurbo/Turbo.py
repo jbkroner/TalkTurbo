@@ -1,16 +1,22 @@
+"""Turbo application code / callbacks"""
+
+import argparse
+import logging
+import os
 import sys
+
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-import os
-import argparse
-import logging
 
+from TalkTurbo.ApiAdapters.AnthropicAdapter import AnthropicAdapter
+from TalkTurbo.ApiAdapters.GoogleAdapter import GoogleAdapter
+from TalkTurbo.ApiAdapters.OpenAIAdapter import OpenAIAdapter
+from TalkTurbo.CompletionAssistant import CompletionAssistant
 from TalkTurbo.LoggerGenerator import LoggerGenerator
 from TalkTurbo.Messages import AssistantMessage, SystemMessage, UserMessage
 from TalkTurbo.OpenAIModelAssistant import OpenAIModelAssistant
 from TalkTurbo.TurboGuild import TurboGuildMap
-
 
 # command parser
 parser = argparse.ArgumentParser(description="Turbo")
@@ -22,7 +28,10 @@ parser.add_argument(
     "-t",
     "--temperature",
     type=float,
-    help="What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.",
+    help=(
+        "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random,"
+        " while lower values like 0.2 will make it more focused and deterministic."
+    ),
     dest="temperature",
 )
 
@@ -83,8 +92,11 @@ logger = LoggerGenerator.create_logger(
 load_dotenv()
 DISCORD_SECRET_TOKEN = os.getenv("DISCORD_SECRET_KEY")
 OPENAI_SECRET_TOKEN = os.getenv("OPENAI_SECRET_KEY")
+ANT_SECRET_TOKEN = os.environ.get("ANTHROPIC_SECRET_KEY", None)
+GOOGLE_SECRET_TOKEN = os.environ.get("GOOGLE_SECRET_KEY", None)
 GUILD_ID = os.getenv("GUILD_ID")
-# load the model assistant
+
+# load the model assistant - this will get removed soon in favor of the completion assistant
 temperature = 0.7 if args.temperature is None else args.temperature
 max_response_length = (
     100 if args.max_response_length is None else args.max_response_length
@@ -93,6 +105,10 @@ assistant = OpenAIModelAssistant(
     temperature=temperature,
     min_dalle_timeout_in_seconds=args.dalle_timeout,
 )
+
+# initialize the completion assistant
+CompletionAssistant.set_adapter(OpenAIAdapter(api_token=OPENAI_SECRET_TOKEN))
+
 
 # bot secret prompt
 DEFAULT_SYSTEM_PROMPT = SystemMessage(
@@ -117,15 +133,13 @@ bot = commands.Bot(command_prefix="!", intents=intents, log_level=logging.INFO)
 def on_message_helper(
     discord_message: discord.Message, system_message: str = None
 ) -> str:
-    log = logging.getLogger("Turbo")
-
     guild = guild_map.get(discord_message.guild.id)
 
     # patch in the system message
     if system_message:
         discord_message.content = system_message
 
-    log.debug(
+    logger.debug(
         "interaction %s - guild: %s: message: %s",
         discord_message.id,
         guild.id,
@@ -138,28 +152,26 @@ def on_message_helper(
 
     # check for content violations
     if message.flagged():
-        log.info("interaction %s - message flagged content", discord_message.id)
+        logger.info("interaction %s - message flagged content", discord_message.id)
         return AssistantMessage(
             (
                 "_(turbos host here: you've breached the content moderation threshold."
                 "  Keep it safe and friendly please!)_"
             )
         )
-    log.info(
+    logger.info(
         "guild %s :: interaction %s :: message not flagged for content. proceeding with query.",
         discord_message.guild.name,
         discord_message.id,
     )
-    log.debug(
+    logger.debug(
         "context for guild %s: %s", guild.id, guild.chat_context.get_messages_as_list()
     )
 
-    # query the model
-    model_response_text = assistant.get_chat_completion(
-        message=message, turbo_guild=guild
-    )
+    guild.chat_context.add_message(message)
+    response = CompletionAssistant.get_chat_completion(context=guild.chat_context)
 
-    return model_response_text
+    return response.get_latest_message().content
 
 
 # events
@@ -176,8 +188,8 @@ async def on_ready():
 @bot.listen()
 async def on_message(message: discord.Message):
     if bot.user.mentioned_in(message=message) and not message.author.bot:
-        logger = logging.getLogger("Turbo")
-        logger.debug(
+        log = logging.getLogger("Turbo")
+        log.debug(
             "bot mentioned in message %s in guild %s", message.content, message.guild
         )
         response = on_message_helper(discord_message=message)
@@ -232,8 +244,8 @@ async def generate_image(
     if not image_path:
         log.warning("dalle did not return an image path")
         no_image_response = assistant.get_chat_completion(
-            message=SystemMessage(
-                "the previous message did not return a response from the model"
+            message=UserMessage(
+                "(SYSTEM) the previous message did not return a response from the model"
                 f"the prompt was: {query}"
                 "please include the prompt (or similiar) in your reply."
             ),
@@ -244,23 +256,18 @@ async def generate_image(
         return
 
     # add the query to the context
-    sys_message = SystemMessage(
-        "This message is coming from your host server."
-        "A user just used your host server to generate a DALL-E image"
-        f"The prompt was {query}"
+    sys_message = UserMessage(
+        "(SYSTEM) A user just generated an image."
+        " Read back the prompt and remark on it."
+        " The image will be included with your response."
+        " The prompt was: " + query
     )
     guild.chat_context.add_message(sys_message)
 
-    prompt_response = assistant.get_chat_completion(
-        message=AssistantMessage(
-            content=(
-                "A user just generated an image."
-                " Read back the prompt and remark on it."
-                " The image will be included with your response."
-                " The prompt was: " + query
-            ),
-        ),
-        turbo_guild=guild,
+    prompt_response = (
+        CompletionAssistant.get_chat_completion(context=guild.chat_context)
+        .get_latest_message()
+        .content
     )
 
     await interaction.followup.send(
@@ -277,6 +284,58 @@ async def generate_image(
         )
 
     log.info("interaction %s: resolved", interaction_id)
+
+
+@bot.tree.command(
+    name="list_available_models",
+    description="list models the bot can query.  Chang with /switch_model.",
+)
+async def list_models(interaction: discord.Interaction):
+    models = (
+        OpenAIAdapter.AVAILABLE_MODELS
+        + AnthropicAdapter.AVAILABLE_MODELS
+        + GoogleAdapter.AVAILABLE_MODELS
+    )
+    await interaction.response.send_message(f"available models: {models}")
+
+
+@bot.tree.command(
+    name="list_current_model",
+    description="list models the bot can query.  Change with /switch_model.",
+)
+async def list_current_model(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        f"current model: {CompletionAssistant.ADAPTER.model_name}"
+    )
+
+
+@bot.tree.command(
+    name="set_model",
+    description="set the model to use for the bot.  Use /list_available_models to see options.",
+)
+async def set_model(interaction: discord.Interaction, model: str = "gpt-3.5-turbo"):
+    response = f"setting model to {model}"
+    logger.info("setting model to %s", model)
+
+    if model in OpenAIAdapter.AVAILABLE_MODELS:
+        CompletionAssistant.set_adapter(
+            OpenAIAdapter(api_token=OPENAI_SECRET_TOKEN, model_name=model)
+        )
+    elif model in AnthropicAdapter.AVAILABLE_MODELS:
+        CompletionAssistant.set_adapter(
+            AnthropicAdapter(api_token=ANT_SECRET_TOKEN, model_name=model)
+        )
+    elif model in GoogleAdapter.AVAILABLE_MODELS:
+        CompletionAssistant.set_adapter(
+            GoogleAdapter(api_token=GOOGLE_SECRET_TOKEN, model_name=model)
+        )
+    else:
+        logger.warning("model %s not found", model)
+        response = (
+            f"model {model} not found.  use /list_available_models to see options."
+        )
+
+    await interaction.response.send_message(response)
 
 
 @bot.tree.command(

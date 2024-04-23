@@ -1,21 +1,25 @@
-from typing import List
+"""Represents the context of a conversation with a chatbot."""
+
 from datetime import datetime, timedelta
+from typing import List
 
 import tiktoken
-from TalkTurbo.Messages import (
-    ContentMessage,
-    SystemMessage,
-)
+
+from TalkTurbo.Messages import ContentMessage, SystemMessage, UserMessage
 
 
 class ChatContext:
+    """
+    Represents the context of a conversation with a chatbot.
+    """
+
     _tokenizer_downloaded = False
 
     def __init__(
         self,
         messages: List[ContentMessage] = None,
         system_prompt: SystemMessage = SystemMessage(""),
-        max_tokens: int = 1024,
+        max_tokens: int = 4096,
         ttl_hours: int = 24,
     ) -> None:
         if not messages:
@@ -41,8 +45,11 @@ class ChatContext:
 
         return total_tokens
 
-    def add_message(self, message: ContentMessage) -> None:
+    def add_message(self, message: ContentMessage | str):
         """Add a message to the context and trim old messages that don't fit within max_tokens."""
+        if isinstance(message, str):
+            message = UserMessage(message, self._encoding)
+
         self.messages.append(message)
 
         # shorten the context to max_tokens if needed
@@ -50,6 +57,10 @@ class ChatContext:
 
         # remove stale messages
         self._remove_stale_messages()
+
+    def get_latest_message(self) -> ContentMessage:
+        """Return the latest message in the context."""
+        return self.messages[-1]
 
     def _reduce_context(self):
         """

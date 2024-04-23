@@ -153,3 +153,22 @@ class FlaggedContentError(Exception):
 
     def __str__(self):
         return f"ContentFlaggedError: flagged category: {self.content_message.get_max_category()}, content: {self.content_message.content}"
+
+
+class MessageFactory:
+    """
+    Create the appropriate message type based on the role.
+    """
+
+    @staticmethod
+    def create_message(content: str, role: str, name: str = None) -> ContentMessage:
+        role = MessageRole(role)
+
+        if role == MessageRole.SYSTEM:
+            return SystemMessage(content=content, name=name)
+        elif role == MessageRole.USER:
+            return UserMessage(content=content, name=name)
+        elif role == MessageRole.ASSISTANT:
+            return AssistantMessage(content=content, name=name)
+        else:
+            raise ValueError(f"Unsupported role: {role}")
