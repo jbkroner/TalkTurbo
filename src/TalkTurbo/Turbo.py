@@ -1,3 +1,5 @@
+"""Turbo application code / callbacks"""
+
 import argparse
 import logging
 import os
@@ -7,6 +9,8 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
+from TalkTurbo.ApiAdapters.AnthropicAdapter import AnthropicAdapter
+from TalkTurbo.ApiAdapters.GoogleAdapter import GoogleAdapter
 from TalkTurbo.ApiAdapters.OpenAIAdapter import OpenAIAdapter
 from TalkTurbo.CompletionAssistant import CompletionAssistant
 from TalkTurbo.LoggerGenerator import LoggerGenerator
@@ -24,7 +28,10 @@ parser.add_argument(
     "-t",
     "--temperature",
     type=float,
-    help="What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.",
+    help=(
+        "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random,"
+        " while lower values like 0.2 will make it more focused and deterministic."
+    ),
     dest="temperature",
 )
 
@@ -85,8 +92,11 @@ logger = LoggerGenerator.create_logger(
 load_dotenv()
 DISCORD_SECRET_TOKEN = os.getenv("DISCORD_SECRET_KEY")
 OPENAI_SECRET_TOKEN = os.getenv("OPENAI_SECRET_KEY")
+ANT_SECRET_TOKEN = os.environ.get("ANTHROPIC_SECRET_KEY", None)
+GOOGLE_SECRET_TOKEN = os.environ.get("GOOGLE_SECRET_KEY", None)
 GUILD_ID = os.getenv("GUILD_ID")
-# load the model assistant
+
+# load the model assistant - this will get removed soon in favor of the completion assistant
 temperature = 0.7 if args.temperature is None else args.temperature
 max_response_length = (
     100 if args.max_response_length is None else args.max_response_length
@@ -289,30 +299,55 @@ async def generate_image(
 
 
 @bot.tree.command(
-    name="list_current_model",
-    description="list the model the bot is currently running.",
+    name="list_available_models",
+    description="list models the bot can query.  Chang with /switch_model.",
 )
-async def estop(interaction: discord.Interaction, reason: str = "no reason given"):
-    pass
-    # await interaction.response.send_message(f"hard stopping, cya later! ({reason})")
+async def list_models(interaction: discord.Interaction):
+    models = (
+        OpenAIAdapter.AVAILABLE_MODELS
+        + AnthropicAdapter.AVAILABLE_MODELS
+        + GoogleAdapter.AVAILABLE_MODELS
+    )
+    await interaction.response.send_message(f"available models: {models}")
 
 
-# @bot.tree.command(
-#     name="list_available_models",
-#     description="list models the bot can query.  Chang with /switch_model.",
-# )
-# async def estop(interaction: discord.Interaction, reason: str = "no reason given"):
-#     pass
-#     # await interaction.response.send_message(f"hard stopping, cya later! ({reason})")
+@bot.tree.command(
+    name="list_current_model",
+    description="list models the bot can query.  Chang with /switch_model.",
+)
+async def list_current_model(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        f"current model: {CompletionAssistant.ADAPTER.model_name}"
+    )
 
 
-# @bot.tree.command(
-#     name="switch_model",
-#     description="switch the model used by the bot",
-# )
-# async def estop(interaction: discord.Interaction, reason: str = "no reason given"):
-#     pass
-#     # await interaction.response.send_message(f"hard stopping, cya later! ({reason})")
+@bot.tree.command(
+    name="set_model",
+    description="set the model to use for the bot.  Use /list_available_models to see options.",
+)
+async def set_model(interaction: discord.Interaction, model: str = "gpt-3.5-turbo"):
+    response = f"setting model to {model}"
+    logger.info("setting model to %s", model)
+
+    if model in OpenAIAdapter.AVAILABLE_MODELS:
+        CompletionAssistant.set_adapter(
+            OpenAIAdapter(api_token=OPENAI_SECRET_TOKEN, model_name=model)
+        )
+    elif model in AnthropicAdapter.AVAILABLE_MODELS:
+        CompletionAssistant.set_adapter(
+            AnthropicAdapter(api_token=ANT_SECRET_TOKEN, model_name=model)
+        )
+    elif model in GoogleAdapter.AVAILABLE_MODELS:
+        CompletionAssistant.set_adapter(
+            GoogleAdapter(api_token=GOOGLE_SECRET_TOKEN, model_name=model)
+        )
+    else:
+        logger.warning("model %s not found", model)
+        response = (
+            f"model {model} not found.  use /list_available_models to see options."
+        )
+
+    await interaction.response.send_message(response)
 
 
 @bot.tree.command(
