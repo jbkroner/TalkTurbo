@@ -1,3 +1,5 @@
+"""Represents the context of a conversation with a chatbot."""
+
 from datetime import datetime, timedelta
 from typing import List
 
@@ -7,6 +9,10 @@ from TalkTurbo.Messages import ContentMessage, SystemMessage, UserMessage
 
 
 class ChatContext:
+    """
+    Represents the context of a conversation with a chatbot.
+    """
+
     _tokenizer_downloaded = False
 
     def __init__(
@@ -39,7 +45,7 @@ class ChatContext:
 
         return total_tokens
 
-    def add_message(self, message: ContentMessage | str) -> None:
+    def add_message(self, message: ContentMessage | str):
         """Add a message to the context and trim old messages that don't fit within max_tokens."""
         if isinstance(message, str):
             message = UserMessage(message, self._encoding)
