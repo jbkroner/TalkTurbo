@@ -1,3 +1,5 @@
+"""Adapter for Anthropic's API."""
+
 from anthropic import Anthropic
 from anthropic.types.message import Message as AnthropicMessage
 
@@ -18,10 +20,12 @@ class AnthropicAdapter(ApiAdapter):
     def __init__(
         self,
         api_token: str,
-        max_tokens: int = 1024,
+        max_tokens: int = 4096,
         model_name: str = "claude-3-opus-20240229",
     ):
-        super().__init__(api_token=api_token, model_name=model_name, max_tokens=1024)
+        super().__init__(
+            api_token=api_token, model_name=model_name, max_tokens=max_tokens
+        )
         self._anthropic_client = Anthropic(api_key=self.api_token)
 
     def get_chat_completion(self, context: ChatContext) -> ContentMessage:

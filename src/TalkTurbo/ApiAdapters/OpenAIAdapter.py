@@ -1,4 +1,4 @@
-import logging
+"""Adapter for OpenAI's API."""
 
 from openai import OpenAI
 
@@ -16,7 +16,7 @@ class OpenAIAdapter(ApiAdapter):
         self,
         api_token: str,
         model_name: str = "gpt-3.5-turbo",
-        max_tokens=1024,
+        max_tokens=4096,
     ):
         super().__init__(
             api_token=api_token, model_name=model_name, max_tokens=max_tokens

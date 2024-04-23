@@ -12,7 +12,7 @@ class GoogleAdapter(ApiAdapter):
 
     AVAILABLE_MODELS = ["gemini-pro"]
 
-    def __init__(self, api_token: str, model_name: str = "gemini-pro"):
+    def __init__(self, api_token: str, model_name: str = "gemini-pro", max_tokens=4096):
 
         super().__init__(api_token=api_token, model_name=model_name, max_tokens=1024)
 
