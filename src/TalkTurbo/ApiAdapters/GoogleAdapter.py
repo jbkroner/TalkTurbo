@@ -1,3 +1,5 @@
+"""Adapter for Google's API."""
+
 import google.generativeai as genai
 
 from TalkTurbo.ApiAdapters.ApiAdapter import ApiAdapter
@@ -10,12 +12,9 @@ class GoogleAdapter(ApiAdapter):
 
     AVAILABLE_MODELS = ["gemini-pro"]
 
-    def __init__(self, api_token: str):
-        self.model_name = "gemini-pro"
+    def __init__(self, api_token: str, model_name: str = "gemini-pro"):
 
-        super().__init__(
-            api_token=api_token, model_name=self.model_name, max_tokens=1024
-        )
+        super().__init__(api_token=api_token, model_name=model_name, max_tokens=1024)
 
         genai.configure(api_key=self.api_token)
         self._google_client = genai.GenerativeModel(model_name=self.model_name)
