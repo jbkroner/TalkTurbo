@@ -3,8 +3,8 @@
 from anthropic import Anthropic
 from anthropic.types.message import Message as AnthropicMessage
 
-from TalkTurbo import ChatContext
 from TalkTurbo.ApiAdapters.ApiAdapter import ApiAdapter
+from TalkTurbo.ChatContext import ChatContext
 from TalkTurbo.Messages import ContentMessage, MessageFactory, SystemMessage
 
 
@@ -45,14 +45,22 @@ class AnthropicAdapter(ApiAdapter):
         return MessageFactory.create_message(message, role)
 
     def convert_context_to_api_format(self, context: ChatContext):
-        return self._remove_system_messages_from_context(context.get_messages_as_list())
+        messages = [
+            {"content": "(ignore this message)", "role": "user"}
+        ] + context.get_messages_as_list()
+        return self._remove_system_messages_from_context(messages)
 
     def _get_content_and_role_from_anthropic_message(
         self, anthropic_message: AnthropicMessage
     ) -> tuple[str, str]:
         return anthropic_message.content[0].text, anthropic_message.role
 
-    def _remove_system_messages_from_context(self, messages: list) -> list:
-        return [
-            message for message in messages if message["role"] in {"user", "assistant"}
-        ]
+    def _remove_system_messages_from_context(
+        self, messages: list[ContentMessage]
+    ) -> list:
+        """convert any system messages to user messages"""
+        for message in messages:
+            if message["role"] == "system":
+                message["role"] = "assistant"
+
+        return messages

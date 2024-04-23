@@ -133,15 +133,13 @@ bot = commands.Bot(command_prefix="!", intents=intents, log_level=logging.INFO)
 def on_message_helper(
     discord_message: discord.Message, system_message: str = None
 ) -> str:
-    log = logging.getLogger("Turbo")
-
     guild = guild_map.get(discord_message.guild.id)
 
     # patch in the system message
     if system_message:
         discord_message.content = system_message
 
-    log.debug(
+    logger.debug(
         "interaction %s - guild: %s: message: %s",
         discord_message.id,
         guild.id,
@@ -154,29 +152,24 @@ def on_message_helper(
 
     # check for content violations
     if message.flagged():
-        log.info("interaction %s - message flagged content", discord_message.id)
+        logger.info("interaction %s - message flagged content", discord_message.id)
         return AssistantMessage(
             (
                 "_(turbos host here: you've breached the content moderation threshold."
                 "  Keep it safe and friendly please!)_"
             )
         )
-    log.info(
+    logger.info(
         "guild %s :: interaction %s :: message not flagged for content. proceeding with query.",
         discord_message.guild.name,
         discord_message.id,
     )
-    log.debug(
+    logger.debug(
         "context for guild %s: %s", guild.id, guild.chat_context.get_messages_as_list()
     )
 
     guild.chat_context.add_message(message)
     response = CompletionAssistant.get_chat_completion(context=guild.chat_context)
-
-    # query the model
-    # model_response_text = assistant.get_chat_completion(
-    #     message=message, turbo_guild=guild
-    # )
 
     return response.get_latest_message().content
 
@@ -251,8 +244,8 @@ async def generate_image(
     if not image_path:
         log.warning("dalle did not return an image path")
         no_image_response = assistant.get_chat_completion(
-            message=SystemMessage(
-                "the previous message did not return a response from the model"
+            message=UserMessage(
+                "(SYSTEM) the previous message did not return a response from the model"
                 f"the prompt was: {query}"
                 "please include the prompt (or similiar) in your reply."
             ),
@@ -263,23 +256,18 @@ async def generate_image(
         return
 
     # add the query to the context
-    sys_message = SystemMessage(
-        "This message is coming from your host server."
-        "A user just used your host server to generate a DALL-E image"
-        f"The prompt was {query}"
+    sys_message = UserMessage(
+        "(SYSTEM) A user just generated an image."
+        " Read back the prompt and remark on it."
+        " The image will be included with your response."
+        " The prompt was: " + query
     )
     guild.chat_context.add_message(sys_message)
 
-    prompt_response = assistant.get_chat_completion(
-        message=AssistantMessage(
-            content=(
-                "A user just generated an image."
-                " Read back the prompt and remark on it."
-                " The image will be included with your response."
-                " The prompt was: " + query
-            ),
-        ),
-        turbo_guild=guild,
+    prompt_response = (
+        CompletionAssistant.get_chat_completion(context=guild.chat_context)
+        .get_latest_message()
+        .content
     )
 
     await interaction.followup.send(

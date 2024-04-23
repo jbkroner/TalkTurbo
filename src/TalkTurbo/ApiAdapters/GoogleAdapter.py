@@ -26,15 +26,29 @@ class GoogleAdapter(ApiAdapter):
         return AssistantMessage(content=response.text)
 
     def convert_context_to_api_format(self, context: ChatContext):
+
+        # multi-turn expects a user and asst messages alternating
+        # to fit the system prompt in we have to make up the first few
+        # messages here
+        messages = [
+            context.system_prompt,
+            AssistantMessage("Sounds great ;)"),
+        ] + context.messages
+
+        # convert to google format
         cc_list = [
             {"role": message.role.value, "parts": [message.content]}
-            for message in context.messages
-            if message.role in [MessageRole.USER, MessageRole.ASSISTANT]
+            for message in messages
         ]
 
-        # :(
+        # update the roles
         for message in cc_list:
-            if message["role"] == MessageRole.ASSISTANT.value:
+            # system messages become user messages
+            if message["role"] == MessageRole.SYSTEM.value:
+                message["role"] = MessageRole.USER.value
+
+            # assistant messages become "model" messages
+            if message["role"] in {MessageRole.ASSISTANT.value}:
                 message["role"] = "model"
 
         return cc_list
