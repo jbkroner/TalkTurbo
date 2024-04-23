@@ -313,7 +313,7 @@ async def list_models(interaction: discord.Interaction):
 
 @bot.tree.command(
     name="list_current_model",
-    description="list models the bot can query.  Chang with /switch_model.",
+    description="list models the bot can query.  Change with /switch_model.",
 )
 async def list_current_model(interaction: discord.Interaction):
     await interaction.response.send_message(
