@@ -1,7 +1,9 @@
 """TurboGuilds track context and usage for a Discord Guild"""
 
-from TalkTurbo.ChatContext import ChatContext
 import logging
+
+from TalkTurbo.ApiAdapters.ApiAdapter import ApiAdapter
+from TalkTurbo.ChatContext import ChatContext
 from TalkTurbo.Messages import SystemMessage
 
 
@@ -16,11 +18,18 @@ class TurboGuild:
         "If asked, you are wearing sassy pants."
     )
 
-    def __init__(self, id, chat_context: ChatContext = None) -> None:
+    def __init__(
+        self,
+        id,
+        name: str = None,
+        chat_context: ChatContext = None,
+        api_adapter: ApiAdapter = None,
+    ) -> None:
         self.id = id
         self.chat_context = chat_context or ChatContext(
             system_prompt=TurboGuild.DEFAULT_SYSTEM_PROMPT
         )
+        self.api_adapter = api_adapter
 
 
 class TurboGuildMap:

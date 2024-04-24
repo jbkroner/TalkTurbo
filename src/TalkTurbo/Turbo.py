@@ -142,7 +142,7 @@ def on_message_helper(
     logger.debug(
         "interaction %s - guild: %s: message: %s",
         discord_message.id,
-        guild.id,
+        discord_message.guild.name,
         discord_message.content,
     )
 
@@ -304,9 +304,13 @@ async def list_models(interaction: discord.Interaction):
     description="list models the bot can query.  Change with /switch_model.",
 )
 async def list_current_model(interaction: discord.Interaction):
-    await interaction.response.send_message(
-        f"current model: {CompletionAssistant.ADAPTER.model_name}"
-    )
+    guild = guild_map.get(interaction.guild.id)
+    if guild.api_adapter:
+        model_name = guild.api_adapter.model_name
+    else:
+        model_name = CompletionAssistant.ADAPTER.model_name
+
+    await interaction.response.send_message(f"current model: {model_name}")
 
 
 @bot.tree.command(
@@ -314,20 +318,21 @@ async def list_current_model(interaction: discord.Interaction):
     description="set the model to use for the bot.  Use /list_available_models to see options.",
 )
 async def set_model(interaction: discord.Interaction, model: str = "gpt-3.5-turbo"):
+    turbo_guild = guild_map.get(interaction.guild.id)
+    logger.info("guild %s: setting model to %s", interaction.guild.name, model)
     response = f"setting model to {model}"
-    logger.info("setting model to %s", model)
 
     if model in OpenAIAdapter.AVAILABLE_MODELS:
-        CompletionAssistant.set_adapter(
-            OpenAIAdapter(api_token=OPENAI_SECRET_TOKEN, model_name=model)
+        turbo_guild.api_adapter = OpenAIAdapter(
+            api_token=OPENAI_SECRET_TOKEN, model_name=model
         )
     elif model in AnthropicAdapter.AVAILABLE_MODELS:
-        CompletionAssistant.set_adapter(
-            AnthropicAdapter(api_token=ANT_SECRET_TOKEN, model_name=model)
+        turbo_guild.api_adapter = AnthropicAdapter(
+            api_token=ANT_SECRET_TOKEN, model_name=model
         )
     elif model in GoogleAdapter.AVAILABLE_MODELS:
-        CompletionAssistant.set_adapter(
-            GoogleAdapter(api_token=GOOGLE_SECRET_TOKEN, model_name=model)
+        turbo_guild.api_adapter = GoogleAdapter(
+            api_token=GOOGLE_SECRET_TOKEN, model_name=model
         )
     else:
         logger.warning("model %s not found", model)

@@ -26,7 +26,9 @@ class CompletionAssistant:
         CompletionAssistant.INITIALIZED = True
 
     @staticmethod
-    def get_chat_completion(context: ChatContext) -> ChatContext:
+    def get_chat_completion(
+        context: ChatContext, adapter: ApiAdapter = None
+    ) -> ChatContext:
         """
         Get a chat completion from the adapter.
 
@@ -37,7 +39,11 @@ class CompletionAssistant:
                 "CompletionAssistant has not been initialized. Please set the adapter first."
             )
 
-        response = CompletionAssistant.ADAPTER.get_chat_completion(context)
+        # use the static adapter if one is not passed in
+        if not adapter:
+            adapter = CompletionAssistant.ADAPTER
+
+        response = adapter.get_chat_completion(context)
 
         context.add_message(response)
 
