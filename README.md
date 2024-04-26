@@ -8,17 +8,19 @@ Once TalkTurbo is added to your server you can talk to the bot by @ing it or usi
 - Clone this repo and `cd` into it.
 - Setup a Discord App+Bot in the [Discord Developer Portal](https://discord.com/developers/docs/intro) + aquire the bot's key.  The [Discord.py docs](https://discordpy.readthedocs.io/en/stable/discord.html) have a good writeup on this.  
 - Aquire an [OpenAI API key](https://platform.openai.com/account/api-keys). 
+- Optional: Aquire an [Anthropic API key](https://www.anthropic.com/api) and/or a [Google API key](https://ai.google.dev/gemini-api/docs/api-key).  These are required for use with the `AnthropicAdapter` and `GoogleAdapter` respectively.
 - Store environment vars in a `.env` file:
-  - Create a `.env` file in the `TalkTurbo` directory and add the following to it:
     ```
+    # required
     DISCORD_SECRET_KEY=<discord_secret_key>
+    
+    # required - all requests are routed through OpenAI Moderation Endpoint
     OPENAI_SECRET_KEY=<openai_secret_key>
-    ```  
-- Alternatively:
-    - Export your keys as enviroment vars:
-        - `$ export DISCORD_SECRET_KEY=<discord_secret_key>`
-        - `$ export OPENAI_SECRET_KEY=<openai_secret_key>`
 
+    # optional
+    ANTHROPIC_SECRET_KEY=<anthropic_secret_key>
+    GOOGLE_SECRET_KEY=<google_secret_key>
+    ```  
 - Run the bot:
     - Windows: `> python ./src/TurboTalk/turbo.py`
     - Linux / MacOS: `$ python3 ./src/TurboTalk/turbo.py`
@@ -29,6 +31,7 @@ The docker image is not currently distributed on the Docker hub but it is easy t
 - Build the container: `docker build -t turbo:latest .`
 - Run the container: `docker run -d --env-file .env turbo:latest`
 
+You can modify CLI args in the `dockerfile`.
 
 ## Args
 
@@ -39,6 +42,8 @@ The docker image is not currently distributed on the Docker hub but it is easy t
 `--no-user-identifier` - do *not* send a user's unique hash to OpenAI with each request. 
 
 `--disable-image-storage` - do not store dalle images locally.  Image prompts and hashes may still be logged. 
+
+`--debug` - enable debug logging.
 
 ## Slash Commands
 Slash commands can be used within a Discord server to control the bot.
@@ -59,6 +64,41 @@ The bot tracks the 'context' of a conversation so that replies stay on topic.  A
 If you notice the bot 'forgetting' things you told it is most likely that the relevant messages got bumped out of the bots context.  
 
 The `gpt-3.5-turbo` model supports a context of up to 4096 tokens.  You may increase the max amount if you wish (and you should see improved recall from the bot), just keep in mind that the OpenAI API charges by the token.  In regular usage the context is almost always filled so you can expect a roughly 4* token usage increase if you raise the max allowed tokens to the limit supported by the `gpt-3.5-turbo` model. 
+
+## Using the `ChatContext` Object with Different Models
+
+Instances of the [`ChatContext`](./src/TalkTurbo/ChatContext.py) provide a generic representation of a conversational context. 
+
+Sub-classes of the [`ApiAdapter`](./src/TalkTurbo/ApiAdapters/ApiAdapter.py) abstract base class provide a standard interface for getting completions with a variety of LLM API endpoints.  For example, the [`OpenAIAdapter`](./src/TalkTurbo/ApiAdapters/OpenAIAdapter.py) class will transform a `ChatContext` into the correct format for the OpenAI API and retrieve a completion.
+
+The [`CompletionAssistant`](./src/TalkTurbo/CompletionAssistant.py) class provides a static interface for submitting `ChatContext` objects into different `ApiAdapters` for completion.  This allows you to switch adapters / models at runtime while maintaining compatibility between your current `ChatContext` and the new adapter.
+
+Here is a simple example:
+
+```python
+from TalkTurbo.ChatContext import ChatContext
+from TalkTurbo.CompletionAssistant import CompletionAssistant
+from TalkTurbo.ApiAdapters.OpenAIAdapter import OpenAIAdapter
+from TalkTurbo.ApiAdapters.GoogleAdapter import GoogleAdapter
+
+# this instance of `ChatContext` will track our conversation
+chat_context = ChatContext()
+chat_context.add_message("hey there!")
+
+# tell the ComplectionAssistant class that we want to use the OpenAIAdapter
+CompletionAssistant.set_adapter(OpenAIAdapter(...))
+
+# get a completion - adds the response to the chat context
+_ = CompletionAssistant.get_chat_completion(chat_context)
+chat_context.get_latest_message().content
+>>> "Hi! How can I assist you?"
+
+# switch to a different model / adapter
+CompletionAssistant.set_adapter(GoogleAdapter(...))
+chat_context.add_message("thanks - this is just a test")
+_ = CompletionAssistant.get_chat_completion(chat_context)
+...
+```
 
 ## Moderation
 
