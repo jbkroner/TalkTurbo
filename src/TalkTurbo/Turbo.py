@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 
 from TalkTurbo.ApiAdapters.AnthropicAdapter import AnthropicAdapter
 from TalkTurbo.ApiAdapters.GoogleAdapter import GoogleAdapter
+from TalkTurbo.ApiAdapters.GroqAdapter import GroqAdapter
 from TalkTurbo.ApiAdapters.OpenAIAdapter import OpenAIAdapter
 from TalkTurbo.CompletionAssistant import CompletionAssistant
 from TalkTurbo.LoggerGenerator import LoggerGenerator
@@ -94,6 +95,7 @@ DISCORD_SECRET_TOKEN = os.getenv("DISCORD_SECRET_KEY")
 OPENAI_SECRET_TOKEN = os.getenv("OPENAI_SECRET_KEY")
 ANT_SECRET_TOKEN = os.environ.get("ANTHROPIC_SECRET_KEY", None)
 GOOGLE_SECRET_TOKEN = os.environ.get("GOOGLE_SECRET_KEY", None)
+GROQ_SECRET_TOKEN = os.environ.get("GROQ_SECRET_KEY", None)
 GUILD_ID = os.getenv("GUILD_ID")
 
 # load the model assistant - this will get removed soon in favor of the completion assistant
@@ -295,6 +297,7 @@ async def list_models(interaction: discord.Interaction):
         OpenAIAdapter.AVAILABLE_MODELS
         + AnthropicAdapter.AVAILABLE_MODELS
         + GoogleAdapter.AVAILABLE_MODELS
+        + GroqAdapter.AVAILABLE_MODELS
     )
     await interaction.response.send_message(f"available models: {models}")
 
@@ -333,6 +336,10 @@ async def set_model(interaction: discord.Interaction, model: str = "gpt-3.5-turb
     elif model in GoogleAdapter.AVAILABLE_MODELS:
         turbo_guild.api_adapter = GoogleAdapter(
             api_token=GOOGLE_SECRET_TOKEN, model_name=model
+        )
+    elif model in GroqAdapter.AVAILABLE_MODELS:
+        turbo_guild.api_adapter = GroqAdapter(
+            api_token=GROQ_SECRET_TOKEN, model_name=model
         )
     else:
         logger.warning("model %s not found", model)
