@@ -4,6 +4,7 @@ import argparse
 import logging
 import os
 import sys
+from pprint import pformat as pf
 
 import discord
 from discord.ext import commands
@@ -17,6 +18,7 @@ from TalkTurbo.CompletionAssistant import CompletionAssistant
 from TalkTurbo.LoggerGenerator import LoggerGenerator
 from TalkTurbo.Messages import AssistantMessage, SystemMessage, UserMessage
 from TalkTurbo.OpenAIModelAssistant import OpenAIModelAssistant
+from TalkTurbo.PreLoad import get_pre_load_data
 from TalkTurbo.TurboGuild import TurboGuildMap
 
 # command parser
@@ -85,6 +87,7 @@ parser.add_argument(
     "--pre-load-context",
     action="store_true",
     help="Pre-load the context with pre-load.yaml",
+)
 
 args = parser.parse_args()
 
@@ -116,6 +119,11 @@ assistant = OpenAIModelAssistant(
 # initialize the completion assistant
 CompletionAssistant.set_adapter(OpenAIAdapter(api_token=OPENAI_SECRET_TOKEN))
 
+# grab the pre-load data
+if args.pre_load_context:
+    logger.info("pre-loading context")
+    PRE_LOAD_DATA, PRE_LOAD_SYSTEM_PROMPT = get_pre_load_data("pre-load.yaml")
+
 
 # bot secret prompt
 DEFAULT_SYSTEM_PROMPT = SystemMessage(
@@ -141,6 +149,14 @@ def on_message_helper(
     discord_message: discord.Message, system_message: str = None
 ) -> str:
     guild = guild_map.get(discord_message.guild.id)
+
+    # patch in pre-load data if needed
+    if args.pre_load_context and not len(guild.chat_context.pre_load_data):
+        for message in PRE_LOAD_DATA:
+            guild.chat_context.add_pre_load_data(message)
+
+        if PRE_LOAD_SYSTEM_PROMPT:
+            guild.chat_context.add_pre_load_system_prompt(PRE_LOAD_SYSTEM_PROMPT)
 
     # patch in the system message
     if system_message:
@@ -172,7 +188,9 @@ def on_message_helper(
         discord_message.id,
     )
     logger.debug(
-        "context for guild %s: %s", guild.id, guild.chat_context.get_messages_as_list()
+        "context for guild %s: %s",
+        guild.id,
+        pf(guild.chat_context.get_messages_as_list()),
     )
 
     guild.chat_context.add_message(message)

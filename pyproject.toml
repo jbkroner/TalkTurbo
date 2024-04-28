@@ -33,13 +33,13 @@ requires = [
   "pytest",
   "anthropic~=0.20",
   "google-generativeai",
-  "groq"
+  "groq",
 ]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "TalkTurbo"
-version = "0.2.0"
+version = "0.4.0"
 authors = [
   { name = "Jim Kroner", email = "contactmeongithubplease@example.com" },
 ]

@@ -17,4 +17,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Run the bot when the container launches
-CMD ["python", "src/TalkTurbo/Turbo.py", "--no-user-identifiers", "--disable-image-storage"]
+CMD ["python", "src/TalkTurbo/Turbo.py", "--no-user-identifiers", "--disable-image-storage", "--pre-load-context", "--debug"]
