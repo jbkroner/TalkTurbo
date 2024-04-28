@@ -1,7 +1,6 @@
 """Represents the context of a conversation with a chatbot."""
 
 from datetime import datetime, timedelta
-from typing import List
 
 import tiktoken
 
@@ -17,8 +16,9 @@ class ChatContext:
 
     def __init__(
         self,
-        messages: List[ContentMessage] = None,
+        messages: list[ContentMessage] = None,
         system_prompt: SystemMessage = SystemMessage(""),
+        pre_load_data: list[ContentMessage] = None,
         max_tokens: int = 4096,
         ttl_hours: int = 24,
     ) -> None:
@@ -26,6 +26,7 @@ class ChatContext:
             messages = []
         self.messages = messages
         self.system_prompt = system_prompt
+        self.pre_load_data = pre_load_data
         self.max_tokens = max_tokens
         self.ttl = timedelta(hours=ttl_hours)  # time-to-live for messages
         self._encoding = tiktoken.get_encoding("cl100k_base")
@@ -34,12 +35,22 @@ class ChatContext:
         self.add_message(system_prompt)
 
     def __str__(self) -> str:
-        return f"ChatContext(messages={self.messages}, secret_prompt='{self.system_prompt}', max_tokens={self.max_tokens})"
+        return (
+            f"ChatContext(messages={self.messages}, "
+            f"system_prompt='{self.system_prompt}', "
+            f"pre_load_data={self.pre_load_data},"
+            f"max_tokens={self.max_tokens})"
+        )
 
     def context_length_in_tokens(self) -> int:
         """Return the total length of the context in tokens."""
         total_tokens = self.system_prompt.encoding_length_in_tokens
 
+        # count the pre-load data
+        for message in self.pre_load_data:
+            total_tokens += message.encoding_length_in_tokens
+
+        # count the live messages
         for message in self.messages:
             total_tokens += message.encoding_length_in_tokens
 
@@ -69,7 +80,10 @@ class ChatContext:
         Side-effect: modifies self.messages
         """
         while self.context_length_in_tokens() > self.max_tokens:
-            del self.messages[1]  # the 0th message is the system prompt
+            # delete pairs of messages user/assistant message
+            # until the context is short enough
+            del self.messages[0]
+            del self.messages[1]
 
     def _remove_stale_messages(self):
         """Remove messages that are older than the TTL"""
@@ -81,8 +95,10 @@ class ChatContext:
             and not isinstance(m, SystemMessage)
         ]
 
-    def get_messages_as_list(self) -> List[dict]:
+    def get_messages_as_list(self) -> list[dict]:
         """Convert the context messages to a list of message dicts"""
-        return [self.system_prompt.to_completion_dict()] + [
-            message.to_completion_dict() for message in self.messages
-        ]
+        return (
+            [self.system_prompt.to_completion_dict()]
+            + [message.to_completion_dict() for message in self.pre_load_data]
+            + [message.to_completion_dict() for message in self.messages]
+        )

@@ -81,6 +81,11 @@ parser.add_argument(
     dest="disable_image_storage",
 )
 
+parser.add_argument(
+    "--pre-load-context",
+    action="store_true",
+    help="Pre-load the context with pre-load.yaml",
+
 args = parser.parse_args()
 
 
