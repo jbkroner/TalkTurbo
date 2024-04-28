@@ -31,9 +31,6 @@ class ChatContext:
         self.ttl = timedelta(hours=ttl_hours)  # time-to-live for messages
         self._encoding = tiktoken.get_encoding("cl100k_base")
 
-        # add the system prompt to the context
-        self.add_message(system_prompt)
-
     def __str__(self) -> str:
         return (
             f"ChatContext(messages={self.messages}, "

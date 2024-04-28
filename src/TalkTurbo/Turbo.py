@@ -85,8 +85,8 @@ parser.add_argument(
 
 parser.add_argument(
     "--pre-load-context",
-    action="store_true",
     help="Pre-load the context with pre-load.yaml",
+    default="pre-load.yaml",
 )
 
 args = parser.parse_args()
@@ -122,7 +122,7 @@ CompletionAssistant.set_adapter(OpenAIAdapter(api_token=OPENAI_SECRET_TOKEN))
 # grab the pre-load data
 if args.pre_load_context:
     logger.info("pre-loading context")
-    PRE_LOAD_DATA, PRE_LOAD_SYSTEM_PROMPT = get_pre_load_data("pre-load.yaml")
+    PRE_LOAD_DATA, PRE_LOAD_SYSTEM_PROMPT = get_pre_load_data(args.pre_load_context)
 
 
 # bot secret prompt
