@@ -60,6 +60,26 @@ If you notice the bot 'forgetting' things you told it is most likely that the re
 
 The `gpt-3.5-turbo` model supports a context of up to 4096 tokens.  You may increase the max amount if you wish (and you should see improved recall from the bot), just keep in mind that the OpenAI API charges by the token.  In regular usage the context is almost always filled so you can expect a roughly 4* token usage increase if you raise the max allowed tokens to the limit supported by the `gpt-3.5-turbo` model. 
 
+![chat](./docs/media/turbo_chatcontext.PNG)
+
 ## Moderation
 
 All system prompts and messages sent to Turbo are routed through the [OpenAI Moderation Endpoint](https://platform.openai.com/docs/guides/moderation).  OpenAI moderation happens regardless of which chat model Turbo is currently using. Messages track their own moderation data and you can quickly check a messages moderation status with `message.flagged()`.
+
+## Pre-load data
+Pre-load data can be used to inject custom system prompts and conversational context.  Pre-load data is tracked seperately from the standard context.  Pre-load data is included when calculating context size.
+
+```yaml
+system_prompt: | 
+    "You are an orange cat named Jones"
+    "You are cheerful and like to meow"
+
+context:
+    - user: "Hey Jones!"
+      assistant: "Meow, hey there! How can I help you?"
+    - user: "Hey Jones, where do you like to hang out?"
+      assistant: "My favorite spot is the pilot's seat.  It has the best view! Meow!"
+```
+
+
+You can use the `--pre-load-context <path>` arg to pass in pre-load data. If no path is passed in `pre-load.yaml` will be used.  There is an example of [`pre-load.yaml`](./pre-load.yaml) provided in this repository.
