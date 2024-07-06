@@ -14,6 +14,7 @@ from TalkTurbo.ApiAdapters.AnthropicAdapter import AnthropicAdapter
 from TalkTurbo.ApiAdapters.GoogleAdapter import GoogleAdapter
 from TalkTurbo.ApiAdapters.GroqAdapter import GroqAdapter
 from TalkTurbo.ApiAdapters.OpenAIAdapter import OpenAIAdapter
+from TalkTurbo.bots.turbo.args import parse_args
 from TalkTurbo.CompletionAssistant import CompletionAssistant
 from TalkTurbo.LoggerGenerator import LoggerGenerator
 from TalkTurbo.Messages import AssistantMessage, SystemMessage, UserMessage
@@ -21,83 +22,14 @@ from TalkTurbo.OpenAIModelAssistant import OpenAIModelAssistant
 from TalkTurbo.PreLoad import get_pre_load_data
 from TalkTurbo.TurboGuild import TurboGuildMap
 
-# command parser
-parser = argparse.ArgumentParser(description="Turbo")
-parser.add_argument(
-    "--debug", action="store_true", help="Enable debug mode", dest="debug"
-)
+args = parse_args()
 
-parser.add_argument(
-    "-t",
-    "--temperature",
-    type=float,
-    help=(
-        "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random,"
-        " while lower values like 0.2 will make it more focused and deterministic."
-    ),
-    dest="temperature",
-)
-
-parser.add_argument(
-    "-m",
-    "--max-response-length",
-    type=int,
-    help="Max response length in tokens",
-    dest="max_response_length",
-)
-
-parser.add_argument(
-    "--sync-app-commands",
-    action="store_true",
-    help="Sync app commands with discord during the bot startup",
-    dest="sync_app_commands",
-)
-
-parser.add_argument(
-    "--no-user-identifiers",
-    action="store_true",
-    help="If set then hashed user identifiers will not be included in requests to the OpenAI API.",
-    dest="no_user_identifiers",
-)
-
-parser.add_argument(
-    "--logging-level",
-    type=str,
-    default="INFO",
-    help="Logging level. Choose DEBUG, INFO, WARNING, or ERROR.  Defaults to INFO",
-    dest="logging_level",
-)
-
-parser.add_argument(
-    "--dalle-timeout",
-    type=int,
-    default=60,
-    help="dalle timeout in seconds",
-    dest="dalle_timeout",
-)
-
-parser.add_argument(
-    "--disable-image-storage",
-    action="store_true",
-    help="Do not store generated Dalle images.",
-    dest="disable_image_storage",
-)
-
-parser.add_argument(
-    "--pre-load-context",
-    help="Pre-load the context with pre-load.yaml",
-    default="pre-load.yaml",
-)
-
-args = parser.parse_args()
-
-
-# logging
+# setup the logger
 logger = LoggerGenerator.create_logger(
     logger_name="Turbo", log_level=logging.DEBUG if args.debug else logging.INFO
 )
 
-# load secrets from the .env file
+# load secrets from the environment
 load_dotenv()
 DISCORD_SECRET_TOKEN = os.getenv("DISCORD_SECRET_KEY")
 OPENAI_SECRET_TOKEN = os.getenv("OPENAI_SECRET_KEY")
@@ -106,17 +38,10 @@ GOOGLE_SECRET_TOKEN = os.environ.get("GOOGLE_SECRET_KEY", None)
 GROQ_SECRET_TOKEN = os.environ.get("GROQ_SECRET_KEY", None)
 GUILD_ID = os.getenv("GUILD_ID")
 
-# load the model assistant - this will get removed soon in favor of the completion assistant
-temperature = 0.7 if args.temperature is None else args.temperature
-max_response_length = (
-    100 if args.max_response_length is None else args.max_response_length
-)
-assistant = OpenAIModelAssistant(
-    temperature=temperature,
-    min_dalle_timeout_in_seconds=args.dalle_timeout,
-)
+# used for dalle generation
+assistant = OpenAIModelAssistant()
 
-# initialize the completion assistant
+# used for chat completions
 CompletionAssistant.set_adapter(OpenAIAdapter(api_token=OPENAI_SECRET_TOKEN))
 
 # grab the pre-load data
@@ -139,9 +64,9 @@ DEFAULT_SYSTEM_PROMPT = SystemMessage(
 # create a new guild map
 guild_map = TurboGuildMap()
 
+# discord bot setup
 intents = discord.Intents.default()
 intents.message_content = True
-
 bot = commands.Bot(command_prefix="!", intents=intents, log_level=logging.INFO)
 
 
@@ -199,7 +124,6 @@ def on_message_helper(
     return response.get_latest_message().content
 
 
-# events
 @bot.event
 async def on_ready():
     log = logging.getLogger("Turbo")
