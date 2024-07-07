@@ -62,9 +62,6 @@ class ChatContext:
         # shorten the context to max_tokens if needed
         self._reduce_context()
 
-        # remove stale messages
-        self._remove_stale_messages()
-
     def add_pre_load_data(self, message: ContentMessage):
         """Add pre-load messages to the context and trim old messages that don't fit within max_tokens."""
         if not isinstance(message, ContentMessage):
@@ -75,9 +72,6 @@ class ChatContext:
         # shorten the context to max_tokens if needed
         self._reduce_context()
 
-        # remove stale messages
-        self._remove_stale_messages()
-
     def add_pre_load_system_prompt(self, message: ContentMessage):
         """Add pre-load system prompt to the context and trim old messages that don't fit within max_tokens."""
         if not isinstance(message, ContentMessage):
@@ -87,9 +81,6 @@ class ChatContext:
 
         # shorten the context to max_tokens if needed
         self._reduce_context()
-
-        # remove stale messages
-        self._remove_stale_messages()
 
     def get_latest_message(self) -> ContentMessage:
         """Return the latest message in the context."""
