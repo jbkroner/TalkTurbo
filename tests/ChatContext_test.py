@@ -1,101 +1,99 @@
 import unittest
-from unittest.mock import patch
 from datetime import datetime, timedelta
+from unittest.mock import patch
+
 from TalkTurbo.ChatContext import ChatContext
-from TalkTurbo.Messages import SystemMessage, AssistantMessage, UserMessage
+from TalkTurbo.Messages import AssistantMessage, SystemMessage, UserMessage
 
 
 class TestChatContext(unittest.TestCase):
-    def test_init(self):
-        chat_context = ChatContext()
-        self.assertEqual(chat_context.messages, [])
-        self.assertEqual(chat_context.system_prompt.content, "")
-        self.assertEqual(chat_context.max_tokens, 1024)
+    def test_init_defaults(self):
+        c = ChatContext()
+        self.assertEqual(c.messages, [])
+        self.assertEqual(c.system_prompt.content, "")
+        self.assertEqual(c.pre_load_data, [])
+        self.assertEqual(c.max_tokens, 4096)
+
+    def test_init_non_default(self):
+        messages = [UserMessage("Hello")]
+        system_prompt = SystemMessage("Prompt")
+        pre_load_data = [AssistantMessage("Data")]
+        max_tokens = 1000
+        c = ChatContext(messages, system_prompt, pre_load_data, max_tokens)
+        self.assertEqual(c.messages, messages)
+        self.assertEqual(c.system_prompt, system_prompt)
+        self.assertEqual(c.pre_load_data, pre_load_data)
+        self.assertEqual(c.max_tokens, max_tokens)
 
     def test_context_length_in_tokens(self):
-
-        messages = [
-            UserMessage("a"),
-            AssistantMessage("a")
-        ]
-
-        system_prompt = SystemMessage("a")
-
-
-        chat_context = ChatContext(messages=messages, system_prompt=system_prompt)
-        self.assertEqual(chat_context.context_length_in_tokens(), 3)
+        c = ChatContext()
+        c.pre_load_data = [UserMessage("Hello", None)]
+        c.messages = [UserMessage("World", None)]
+        self.assertEqual(
+            c.context_length_in_tokens(), 2 + c.system_prompt.encoding_length_in_tokens
+        )
 
     def test_add_message(self):
-        chat_context = ChatContext()
-        message = UserMessage("Hello")
-        chat_context.add_message(UserMessage("Hello"))
-        self.assertEqual(len(chat_context.messages), 1)
-        self.assertEqual(chat_context.messages[0].content, message.content)
+        c = ChatContext()
+        c.messages = [UserMessage("Hello", None)]
+        c.add_message(UserMessage("World", None))
+        self.assertEqual(len(c.messages), 2)
+        self.assertEqual(c.messages[-1].content, "World")
 
-    def test_reduce_context_single_message_less_than_max(self):
-        chat_context = ChatContext(max_tokens=3)
-        chat_context.add_message(UserMessage("testing _reduce_context!"))
-        chat_context._reduce_context()
-        self.assertEqual(len(chat_context.messages), 0)
+    def test_add_message_str(self):
+        c = ChatContext()
+        c.messages = [UserMessage("Hello", None)]
+        c.add_message("World")
+        self.assertEqual(len(c.messages), 2)
+        self.assertEqual(c.messages[-1].content, "World")
 
+    def test_add_pre_load_data(self):
+        c = ChatContext()
+        c.add_pre_load_data(UserMessage("Hello", None))
+        self.assertEqual(len(c.pre_load_data), 1)
+        self.assertEqual(c.pre_load_data[-1].content, "Hello")
 
-    def test_reduce_context_single_message_greater_than_max(self):
-        chat_context = ChatContext(max_tokens=3)
-        chat_context.add_message(UserMessage("Testing reduce_context with a longer message"))
-        chat_context._reduce_context()
-        self.assertEqual(len(chat_context.messages), 0)
+    def test_add_pre_load_data_not_content_message(self):
+        c = ChatContext()
+        with self.assertRaises(ValueError):
+            c.add_pre_load_data("Hello")
 
-    def test_reduce_context_multiple_messages(self):
-        chat_context = ChatContext(max_tokens=6)
-        chat_context.add_message(UserMessage("Hello there cats and dogs"))
-        chat_context.add_message(UserMessage("Hi"))
-        chat_context.add_message(UserMessage("Hey"))
-        chat_context._reduce_context()
-        self.assertEqual(len(chat_context.messages), 2)
-        self.assertEqual(chat_context.messages[0].content, "Hi")
-        self.assertEqual(chat_context.messages[1].content, "Hey")
+    def test_add_pre_load_system_prompt(self):
+        c = ChatContext()
+        c.add_pre_load_system_prompt(SystemMessage("Hello"))
+        self.assertEqual(c.system_prompt.content, "Hello")
 
-    def test_reduce_context_no_removal(self):
-        chat_context = ChatContext(max_tokens=5)
-        chat_context.add_message(UserMessage("Hello"))
-        chat_context.add_message(UserMessage("Hi"))
-        chat_context._reduce_context()
-        self.assertEqual(len(chat_context.messages), 2)
-        self.assertEqual(chat_context.messages[0].content, "Hello")
-        self.assertEqual(chat_context.messages[1].content, "Hi")
+    def test_add_pre_load_system_prompt_not_content_message(self):
+        c = ChatContext()
+        with self.assertRaises(ValueError):
+            c.add_pre_load_system_prompt("Hello")
 
-    def test_remove_stale_messages(self):
-        # Mock datetime to control the current time
-        with patch('TalkTurbo.ChatContext.datetime') as mock_datetime:
-            # Set the current time to a specific point
-            now = datetime(2023, 1, 1, 12, 0, 0)
-            mock_datetime.utcnow.return_value = now
+    def test_get_latest_message(self):
+        c = ChatContext()
+        c.messages = [UserMessage("Hello", None), UserMessage("World", None)]
+        self.assertEqual(c.get_latest_message().content, "World")
 
-            # Create a ChatContext with a TTL of 1 hour
-            chat_context = ChatContext(ttl_hours=1)
-            
-            # Add a message that is just within the TTL
-            fresh_message = UserMessage("Fresh message")
-            fresh_message.created_on_utc = now - timedelta(minutes=59)
-            chat_context.add_message(fresh_message)
+    def test_reduce_context(self):
+        c = ChatContext(max_tokens=10)
+        c.messages = [
+            UserMessage("hey there!", None),
+            AssistantMessage("I'm here to help."),
+            UserMessage("really long question?", None),
+        ]
+        c._reduce_context()
+        self.assertEqual(len(c.messages), 1)
 
-            # Add a message that is outside the TTL
-            stale_message = UserMessage("Stale message")
-            stale_message.created_on_utc = now - timedelta(hours=1, minutes=1)
-            chat_context.add_message(stale_message)
+    def test_get_messages_as_list(self):
+        c = ChatContext()
+        c.messages = [UserMessage("Hello", None), UserMessage("World", None)]
 
-            # Check if stale messages are removed correctly
-            self.assertEqual(len(chat_context.messages), 1)
-            self.assertEqual(chat_context.messages[0].content, fresh_message.content)
+        expected = [
+            {"content": "", "role": "system"},
+            {"content": "Hello", "role": "user"},
+            {"content": "World", "role": "user"},
+        ]
 
-    def test_to_dict(self):
-        chat_context = ChatContext()
-        chat_context.add_message(UserMessage("Hello"))
-        chat_context.add_message(UserMessage("Hello2"))
-        context_list = chat_context.get_messages_as_list()
-        self.assertEqual(context_list[0]["content"], "") # system prompt
-        self.assertEqual(context_list[1]["content"], "Hello")
-        self.assertEqual(context_list[2]["content"], "Hello2")
+        self.assertEqual(c.get_messages_as_list(), expected)
 
 
 if __name__ == "__main__":
