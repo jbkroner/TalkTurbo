@@ -1,6 +1,5 @@
 """Turbo application code / callbacks"""
 
-import argparse
 import logging
 import os
 import sys
@@ -306,4 +305,9 @@ async def estop(interaction: discord.Interaction, reason: str = "no reason given
     sys.exit(1)
 
 
-bot.run(DISCORD_SECRET_TOKEN)
+def main():
+    bot.run(DISCORD_SECRET_TOKEN)
+
+
+if __name__ == "__main__":
+    main()
