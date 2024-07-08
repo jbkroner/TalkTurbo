@@ -1,8 +1,8 @@
 """Represents the context of a conversation with a chatbot."""
 
-import tiktoken
-
 from datetime import datetime, timedelta
+
+import tiktoken
 
 from TalkTurbo.Messages import ContentMessage, SystemMessage, UserMessage
 
@@ -20,7 +20,6 @@ class ChatContext:
         system_prompt: SystemMessage = SystemMessage(""),
         pre_load_data: list[ContentMessage] = None,
         max_tokens: int = 4096,
-        ttl_hours: int = 24,
     ) -> None:
         if not messages:
             messages = []
@@ -28,7 +27,6 @@ class ChatContext:
         self.system_prompt = system_prompt
         self.pre_load_data = pre_load_data if pre_load_data else []
         self.max_tokens = max_tokens
-        self.ttl = timedelta(hours=ttl_hours)  # time-to-live for messages
         self._encoding = tiktoken.get_encoding("cl100k_base")
 
     def __str__(self) -> str:
@@ -64,9 +62,6 @@ class ChatContext:
         # shorten the context to max_tokens if needed
         self._reduce_context()
 
-        # remove stale messages
-        self._remove_stale_messages()
-
     def add_pre_load_data(self, message: ContentMessage):
         """Add pre-load messages to the context and trim old messages that don't fit within max_tokens."""
         if not isinstance(message, ContentMessage):
@@ -77,9 +72,6 @@ class ChatContext:
         # shorten the context to max_tokens if needed
         self._reduce_context()
 
-        # remove stale messages
-        self._remove_stale_messages()
-
     def add_pre_load_system_prompt(self, message: ContentMessage):
         """Add pre-load system prompt to the context and trim old messages that don't fit within max_tokens."""
         if not isinstance(message, ContentMessage):
@@ -89,9 +81,6 @@ class ChatContext:
 
         # shorten the context to max_tokens if needed
         self._reduce_context()
-
-        # remove stale messages
-        self._remove_stale_messages()
 
     def get_latest_message(self) -> ContentMessage:
         """Return the latest message in the context."""
@@ -108,11 +97,6 @@ class ChatContext:
             # until the context is short enough
             del self.messages[0]
             del self.messages[1]
-
-    def _remove_stale_messages(self):
-        """Remove messages that are older than the TTL"""
-        # not implemented
-        return
 
     def get_messages_as_list(self) -> list[dict]:
         """Convert the context messages to a list of message dicts"""
