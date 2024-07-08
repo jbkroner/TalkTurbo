@@ -5,9 +5,9 @@ name: Python package
 
 on:
   push:
-    branches: ["main", "47-cleanup"]
+    branches: ["main",]
   pull_request:
-    branches: ["main", "47-cleanup"]
+    branches: ["main",]
 
 env:
   OPENAI_SECRET_KEY: "dummy"
