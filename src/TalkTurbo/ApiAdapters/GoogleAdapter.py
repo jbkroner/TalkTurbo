@@ -13,7 +13,6 @@ class GoogleAdapter(ApiAdapter):
     AVAILABLE_MODELS = ["gemini-pro"]
 
     def __init__(self, api_token: str, model_name: str = "gemini-pro", max_tokens=4096):
-
         super().__init__(api_token=api_token, model_name=model_name, max_tokens=1024)
 
         genai.configure(api_key=self.api_token)
@@ -26,7 +25,6 @@ class GoogleAdapter(ApiAdapter):
         return AssistantMessage(content=response.text)
 
     def convert_context_to_api_format(self, context: ChatContext):
-
         # multi-turn expects a user and asst messages alternating
         # to fit the system prompt in we have to make up the first few
         # messages here
@@ -36,10 +34,7 @@ class GoogleAdapter(ApiAdapter):
         ] + context.messages
 
         # convert to google format
-        cc_list = [
-            {"role": message.role.value, "parts": [message.content]}
-            for message in messages
-        ]
+        cc_list = [{"role": message.role.value, "parts": [message.content]} for message in messages]
 
         # update the roles
         for message in cc_list:

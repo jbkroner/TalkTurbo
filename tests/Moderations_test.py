@@ -5,9 +5,7 @@ from TalkTurbo.Moderations import CategoryFlags, CategoryScores
 
 class TestCategories(unittest.TestCase):
     def test_category_flags_initialization(self):
-        flags = CategoryFlags(
-            True, False, True, False, True, False, True, False, True, False, True
-        )
+        flags = CategoryFlags(True, False, True, False, True, False, True, False, True, False, True)
         self.assertTrue(flags.sexual)
         self.assertFalse(flags.hate)
         self.assertTrue(flags.harassment)
@@ -35,9 +33,7 @@ class TestCategories(unittest.TestCase):
         self.assertEqual(scores.violence, 0.2)
 
     def test_category_flags_iteration(self):
-        flags = CategoryFlags(
-            True, False, True, False, True, False, True, False, True, False, True
-        )
+        flags = CategoryFlags(True, False, True, False, True, False, True, False, True, False, True)
         expected = [
             ("sexual", True),
             ("hate", False),

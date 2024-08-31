@@ -1,13 +1,12 @@
 import unittest
 from unittest.mock import Mock, patch
+
 from TalkTurbo.Messages import (
+    AssistantMessage,
+    ContentMessage,
     MessageRole,
     SystemMessage,
     UserMessage,
-    AssistantMessage,
-    FunctionMessage,
-    ToolMessage,
-    ContentMessage,
 )
 from TalkTurbo.Moderations import CategoryFlags, CategoryScores
 
@@ -104,9 +103,7 @@ class TestMessageClasses(unittest.TestCase):
         msg = ContentMessage(MessageRole.ASSISTANT, content)
         completion_dict = msg.to_completion_dict()
 
-        self.assertEqual(
-            completion_dict, {"role": MessageRole.ASSISTANT.value, "content": content}
-        )
+        self.assertEqual(completion_dict, {"role": MessageRole.ASSISTANT.value, "content": content})
 
 
 if __name__ == "__main__":

@@ -18,9 +18,7 @@ class OpenAIAdapter(ApiAdapter):
         model_name: str = "gpt-3.5-turbo",
         max_tokens=4096,
     ):
-        super().__init__(
-            api_token=api_token, model_name=model_name, max_tokens=max_tokens
-        )
+        super().__init__(api_token=api_token, model_name=model_name, max_tokens=max_tokens)
         self._open_ai_client = OpenAI(api_key=self.api_token)
 
     def get_chat_completion(self, context: ChatContext) -> ContentMessage:

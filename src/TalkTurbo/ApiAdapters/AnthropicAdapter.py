@@ -23,9 +23,7 @@ class AnthropicAdapter(ApiAdapter):
         max_tokens: int = 4096,
         model_name: str = "claude-3-opus-20240229",
     ):
-        super().__init__(
-            api_token=api_token, model_name=model_name, max_tokens=max_tokens
-        )
+        super().__init__(api_token=api_token, model_name=model_name, max_tokens=max_tokens)
         self._anthropic_client = Anthropic(api_key=self.api_token)
 
     def get_chat_completion(self, context: ChatContext) -> ContentMessage:
@@ -55,9 +53,7 @@ class AnthropicAdapter(ApiAdapter):
     ) -> tuple[str, str]:
         return anthropic_message.content[0].text, anthropic_message.role
 
-    def _remove_system_messages_from_context(
-        self, messages: list[ContentMessage]
-    ) -> list:
+    def _remove_system_messages_from_context(self, messages: list[ContentMessage]) -> list:
         """convert any system messages to user messages"""
         for message in messages:
             if message["role"] == "system":

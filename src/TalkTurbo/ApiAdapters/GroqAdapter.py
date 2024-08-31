@@ -18,12 +18,8 @@ class GroqAdapter(ApiAdapter):
         "gemma-7b-it",  # google
     ]
 
-    def __init__(
-        self, api_token, model_name=AVAILABLE_MODELS[0], max_tokens=4096
-    ) -> None:
-        super().__init__(
-            api_token=api_token, model_name=model_name, max_tokens=max_tokens
-        )
+    def __init__(self, api_token, model_name=AVAILABLE_MODELS[0], max_tokens=4096) -> None:
+        super().__init__(api_token=api_token, model_name=model_name, max_tokens=max_tokens)
         self._groq_client = Groq(api_key=self.api_token)
 
     def get_chat_completion(self, context: ChatContext) -> ContentMessage:

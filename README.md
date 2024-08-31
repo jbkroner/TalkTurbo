@@ -6,8 +6,8 @@ Once TalkTurbo is added to your server you can talk to the bot by @ing it or usi
 
 ## Usage
 - Clone this repo and `cd` into it.
-- Setup a Discord App+Bot in the [Discord Developer Portal](https://discord.com/developers/docs/intro) + aquire the bot's key.  The [Discord.py docs](https://discordpy.readthedocs.io/en/stable/discord.html) have a good writeup on this.
-- Aquire an [OpenAI API key](https://platform.openai.com/account/api-keys).
+- Setup a Discord App+Bot in the [Discord Developer Portal](https://discord.com/developers/docs/intro) + acquire the bot's key.  The [Discord.py docs](https://discordpy.readthedocs.io/en/stable/discord.html) have a good writeup on this.
+- Acquire an [OpenAI API key](https://platform.openai.com/account/api-keys).
 - Store environment vars in a `.env` file:
   - Create a `.env` file in the `TalkTurbo` directory and add the following to it:
     ```
@@ -15,7 +15,7 @@ Once TalkTurbo is added to your server you can talk to the bot by @ing it or usi
     OPENAI_SECRET_KEY=<openai_secret_key>
     ```
 - Alternatively:
-    - Export your keys as enviroment vars:
+    - Export your keys as environment vars:
         - `$ export DISCORD_SECRET_KEY=<discord_secret_key>`
         - `$ export OPENAI_SECRET_KEY=<openai_secret_key>`
 
@@ -34,7 +34,7 @@ The docker image is not currently distributed on the Docker hub but it is easy t
 
 `-h`, `--help` - show this help message and exit
 
-`--sync-app-commands` - sync new or udpated app commands with Discord.  This will sync commands globally with all guilds that your instance of Turbo has joined.
+`--sync-app-commands` - sync new or updated app commands with Discord.  This will sync commands globally with all guilds that your instance of Turbo has joined.
 
 `--no-user-identifier` - do *not* send a user's unique hash to OpenAI with each request.
 
@@ -67,7 +67,7 @@ The `gpt-3.5-turbo` model supports a context of up to 4096 tokens.  You may incr
 All system prompts and messages sent to Turbo are routed through the [OpenAI Moderation Endpoint](https://platform.openai.com/docs/guides/moderation).  OpenAI moderation happens regardless of which chat model Turbo is currently using. Messages track their own moderation data and you can quickly check a messages moderation status with `message.flagged()`.
 
 ## Pre-load data
-Pre-load data can be used to inject custom system prompts and conversational context.  Pre-load data is tracked seperately from the standard context.  Pre-load data is included when calculating context size.
+Pre-load data can be used to inject custom system prompts and conversational context.  Pre-load data is tracked separately from the standard context.  Pre-load data is included when calculating context size.
 
 ```yaml
 system_prompt: |

@@ -15,6 +15,5 @@ context:
   - user: "can you tell me a joke?"
     assistant: "meow?! nope!"
 
-  - user: "pleae remember the number 238.  This is being tracked in your conversation context by me!"
+  - user: "please remember the number 238.  This is being tracked in your conversation context by me!"
     assistant: "meow, got it! 238."
-

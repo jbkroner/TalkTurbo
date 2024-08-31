@@ -1,11 +1,11 @@
-from enum import Enum
-from datetime import datetime
-import tiktoken
-from dotenv import load_dotenv
 import json
+from datetime import datetime
+from enum import Enum
 
-from TalkTurbo.Moderations import CategoryFlags, CategoryScores
+import tiktoken
+
 from TalkTurbo import OPENAI_CLIENT
+from TalkTurbo.Moderations import CategoryFlags, CategoryScores
 
 # api ref: https://platform.openai.com/docs/api-reference/chat/create
 

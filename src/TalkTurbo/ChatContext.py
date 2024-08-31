@@ -1,7 +1,5 @@
 """Represents the context of a conversation with a chatbot."""
 
-from datetime import datetime, timedelta
-
 import tiktoken
 
 from TalkTurbo.Messages import ContentMessage, SystemMessage, UserMessage

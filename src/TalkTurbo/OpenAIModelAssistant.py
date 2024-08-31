@@ -1,20 +1,19 @@
-import os
-from typing import List, Dict, Tuple
-import logging
-import time
 import base64
+import logging
+import os
+import time
+from typing import Dict, List, Tuple
 
+import requests
+
+from TalkTurbo import OPENAI_CLIENT
 from TalkTurbo.ChatContext import ChatContext
 from TalkTurbo.Messages import (
-    ContentMessage,
     AssistantMessage,
+    ContentMessage,
     SystemMessage,
 )
 from TalkTurbo.TurboGuild import TurboGuild
-from TalkTurbo import OPENAI_CLIENT
-
-
-import requests
 
 logger = logging.getLogger("Turbo")
 logger.setLevel(logging.INFO)
@@ -41,9 +40,7 @@ class OpenAIModelAssistant:
         self.min_dalle_timeout_in_seconds = min_dalle_timeout_in_seconds
         self._last_dalle_gen_time = time.time()
 
-    def get_chat_completion(
-        self, message: ContentMessage, turbo_guild: TurboGuild
-    ) -> str:
+    def get_chat_completion(self, message: ContentMessage, turbo_guild: TurboGuild) -> str:
         """
         Get a chat completion for a given ContentMessage and TurboGuild.
 
@@ -73,9 +70,7 @@ class OpenAIModelAssistant:
 
         if not completion:
             turbo_guild.chat_context.add_message(
-                SystemMessage(
-                    "the previous message did not return a response from the model"
-                )
+                SystemMessage("the previous message did not return a response from the model")
             )
             return "_(turbo's host here: turbo didn't have anything to say :bluefootbooby:)_"
 
@@ -129,7 +124,7 @@ class OpenAIModelAssistant:
     def query_dalle(
         self,
         query: str,
-        path: str = f"./dalle_tmp/",
+        path: str = "./dalle_tmp/",
         resolution: str = "large",
         hashed_user_identifier: str = None,
         openai_secret_key: str = "",
@@ -190,11 +185,7 @@ class OpenAIModelAssistant:
         return encoded_string
 
     def dalle_timeout_passed(self) -> bool:
-        return (
-            True
-            if self.dalle_timeout_remaining() > self.min_dalle_timeout_in_seconds
-            else False
-        )
+        return True if self.dalle_timeout_remaining() > self.min_dalle_timeout_in_seconds else False
 
     def dalle_timeout_remaining(self) -> float:
         return max(time.time() - self._last_dalle_gen_time, 0.0)
@@ -207,10 +198,8 @@ class OpenAIModelAssistant:
         response = requests.post(url=url, json=payload, headers=headers)
 
         try:
-            category, category_score = OpenAIModelAssistant._category_score(
-                response.json()
-            )
-        except KeyError as e:
+            category, category_score = OpenAIModelAssistant._category_score(response.json())
+        except KeyError:
             return None, 0.0  # naive guard against a bad response
 
         return category, category_score
