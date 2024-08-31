@@ -1,5 +1,5 @@
 """
-The CompletionAssistant class is responsible for managing the API adapters and 
+The CompletionAssistant class is responsible for managing the API adapters and
 providing a unified interface for interacting with them.
 """
 

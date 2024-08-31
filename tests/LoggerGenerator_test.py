@@ -92,7 +92,9 @@ class TestLoggerGenerator(unittest.TestCase):
         log_output = StringIO()
 
         logger = LoggerGenerator.create_logger(logger_name=logger_name)
-        logger.handlers[0].stream = (
+        logger.handlers[
+            0
+        ].stream = (
             log_output  # Replace the console handler's output stream with log_output
         )
         logger.info(log_message)
