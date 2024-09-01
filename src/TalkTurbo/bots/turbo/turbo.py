@@ -69,9 +69,7 @@ intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents, log_level=logging.INFO)
 
 
-def on_message_helper(
-    discord_message: discord.Message, system_message: str = None
-) -> str:
+def on_message_helper(discord_message: discord.Message, system_message: str = None) -> str:
     guild = guild_map.get(discord_message.guild.id)
 
     # patch in pre-load data if needed
@@ -137,9 +135,7 @@ async def on_ready():
 async def on_message(message: discord.Message):
     if bot.user.mentioned_in(message=message) and not message.author.bot:
         log = logging.getLogger("Turbo")
-        log.debug(
-            "bot mentioned in message %s in guild %s", message.content, message.guild
-        )
+        log.debug("bot mentioned in message %s in guild %s", message.content, message.guild)
         response = on_message_helper(discord_message=message)
         await message.reply(response)
 
@@ -195,7 +191,7 @@ async def generate_image(
             message=UserMessage(
                 "(SYSTEM) the previous message did not return a response from the model"
                 f"the prompt was: {query}"
-                "please include the prompt (or similiar) in your reply."
+                "please include the prompt (or similar) in your reply."
             ),
             turbo_guild=guild,
         )
@@ -218,9 +214,7 @@ async def generate_image(
         .content
     )
 
-    await interaction.followup.send(
-        content=prompt_response, file=discord.File(image_path)
-    )
+    await interaction.followup.send(content=prompt_response, file=discord.File(image_path))
 
     # clean up dalle file if requested
     if args.disable_image_storage:
@@ -272,26 +266,16 @@ async def set_model(interaction: discord.Interaction, model: str = "gpt-3.5-turb
     response = f"setting model to {model}"
 
     if model in OpenAIAdapter.AVAILABLE_MODELS:
-        turbo_guild.api_adapter = OpenAIAdapter(
-            api_token=OPENAI_SECRET_TOKEN, model_name=model
-        )
+        turbo_guild.api_adapter = OpenAIAdapter(api_token=OPENAI_SECRET_TOKEN, model_name=model)
     elif model in AnthropicAdapter.AVAILABLE_MODELS:
-        turbo_guild.api_adapter = AnthropicAdapter(
-            api_token=ANT_SECRET_TOKEN, model_name=model
-        )
+        turbo_guild.api_adapter = AnthropicAdapter(api_token=ANT_SECRET_TOKEN, model_name=model)
     elif model in GoogleAdapter.AVAILABLE_MODELS:
-        turbo_guild.api_adapter = GoogleAdapter(
-            api_token=GOOGLE_SECRET_TOKEN, model_name=model
-        )
+        turbo_guild.api_adapter = GoogleAdapter(api_token=GOOGLE_SECRET_TOKEN, model_name=model)
     elif model in GroqAdapter.AVAILABLE_MODELS:
-        turbo_guild.api_adapter = GroqAdapter(
-            api_token=GROQ_SECRET_TOKEN, model_name=model
-        )
+        turbo_guild.api_adapter = GroqAdapter(api_token=GROQ_SECRET_TOKEN, model_name=model)
     else:
         logger.warning("model %s not found", model)
-        response = (
-            f"model {model} not found.  use /list_available_models to see options."
-        )
+        response = f"model {model} not found.  use /list_available_models to see options."
 
     await interaction.response.send_message(response)
 

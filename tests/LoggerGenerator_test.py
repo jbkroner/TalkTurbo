@@ -1,8 +1,9 @@
-import unittest
 import logging
 import os
-from TalkTurbo.LoggerGenerator import LoggerGenerator
+import unittest
 from logging.handlers import RotatingFileHandler
+
+from TalkTurbo.LoggerGenerator import LoggerGenerator
 
 
 @unittest.skip("Skip LoggerGenerator tests")
@@ -19,24 +20,18 @@ class TestLoggerGenerator(unittest.TestCase):
         self.assertEqual(logger.level, logging.INFO)
 
     def test_create_logger_with_custom_level(self):
-        logger = LoggerGenerator.create_logger(
-            logger_name="TestLogger", log_level=logging.DEBUG
-        )
+        logger = LoggerGenerator.create_logger(logger_name="TestLogger", log_level=logging.DEBUG)
         self.assertEqual(logger.level, logging.DEBUG)
 
     def test_create_logger_with_custom_format(self):
         log_format = "%(asctime)s - %(levelname)s - %(message)s"
-        logger = LoggerGenerator.create_logger(
-            logger_name="TestLogger", log_format=log_format
-        )
+        logger = LoggerGenerator.create_logger(logger_name="TestLogger", log_format=log_format)
         console_handler = logger.handlers[0]
         self.assertEqual(console_handler.formatter._fmt, log_format)
 
     def test_create_logger_with_log_file(self):
         filename = "test.log"
-        logger = LoggerGenerator.create_logger(
-            logger_name="TestLogger", filename=filename
-        )
+        logger = LoggerGenerator.create_logger(logger_name="TestLogger", filename=filename)
         file_handler = logger.handlers[1]
         self.assertEqual(file_handler.baseFilename, os.path.abspath(filename))
         if os.path.exists(filename):
@@ -47,9 +42,7 @@ class TestLoggerGenerator(unittest.TestCase):
         console_handler_exists = any(
             isinstance(handler, logging.StreamHandler) for handler in logger.handlers
         )
-        self.assertTrue(
-            console_handler_exists, "Console handler not found in the logger handlers"
-        )
+        self.assertTrue(console_handler_exists, "Console handler not found in the logger handlers")
 
     def test_create_logger_rotating_file_handler_presence(self):
         logger = LoggerGenerator.create_logger(logger_name="TestLogger")
@@ -68,9 +61,7 @@ class TestLoggerGenerator(unittest.TestCase):
             logger_name="TestLogger", max_bytes=max_bytes, backup_count=backup_count
         )
         file_handler = next(
-            handler
-            for handler in logger.handlers
-            if isinstance(handler, RotatingFileHandler)
+            handler for handler in logger.handlers if isinstance(handler, RotatingFileHandler)
         )
 
         self.assertEqual(
@@ -91,10 +82,9 @@ class TestLoggerGenerator(unittest.TestCase):
         log_message = "This is a test log message"
         log_output = StringIO()
 
-        logger = LoggerGenerator.create_logger(logger_name=logger_name)
-        logger.handlers[0].stream = (
-            log_output  # Replace the console handler's output stream with log_output
-        )
+        logger = LoggerGenerator
+        # Replace the console handler's output stream with log_output.create_logger(logger_name=logger_name)
+        logger.handlers[0].stream = log_output
         logger.info(log_message)
 
         log_output.seek(0)  # Reset the log_output stream position

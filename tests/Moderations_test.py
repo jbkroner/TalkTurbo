@@ -4,7 +4,6 @@ from TalkTurbo.Moderations import CategoryFlags, CategoryScores
 
 
 class TestCategories(unittest.TestCase):
-
     def test_category_flags_initialization(self):
         flags = CategoryFlags(True, False, True, False, True, False, True, False, True, False, True)
         self.assertTrue(flags.sexual)
@@ -36,17 +35,17 @@ class TestCategories(unittest.TestCase):
     def test_category_flags_iteration(self):
         flags = CategoryFlags(True, False, True, False, True, False, True, False, True, False, True)
         expected = [
-            ('sexual', True),
-            ('hate', False),
-            ('harassment', True),
-            ('selfharm', False),
-            ('sexual_minor', True),
-            ('hate_threatening', False),
-            ('violence_graphic', True),
-            ('self_harm_inten', False),
-            ('self_harm_instruction', True),
-            ('harassment_threatening', False),
-            ('violence', True),
+            ("sexual", True),
+            ("hate", False),
+            ("harassment", True),
+            ("selfharm", False),
+            ("sexual_minor", True),
+            ("hate_threatening", False),
+            ("violence_graphic", True),
+            ("self_harm_inten", False),
+            ("self_harm_instruction", True),
+            ("harassment_threatening", False),
+            ("violence", True),
         ]
         for i, (category, status) in enumerate(flags):
             self.assertEqual((category, status), expected[i])
@@ -54,17 +53,17 @@ class TestCategories(unittest.TestCase):
     def test_category_scores_iteration(self):
         scores = CategoryScores(0.5, 0.2, 0.8, 0.1, 0.6, 0.3, 0.9, 0.4, 0.7, 0.5, 0.2)
         expected = [
-            ('sexual', 0.5),
-            ('hate', 0.2),
-            ('harassment', 0.8),
-            ('selfharm', 0.1),
-            ('sexual_minor', 0.6),
-            ('hate_threatening', 0.3),
-            ('violence_graphic', 0.9),
-            ('self_harm_intent', 0.4),
-            ('self_harm_instruction', 0.7),
-            ('harassment_threatening', 0.5),
-            ('violence', 0.2),
+            ("sexual", 0.5),
+            ("hate", 0.2),
+            ("harassment", 0.8),
+            ("selfharm", 0.1),
+            ("sexual_minor", 0.6),
+            ("hate_threatening", 0.3),
+            ("violence_graphic", 0.9),
+            ("self_harm_intent", 0.4),
+            ("self_harm_instruction", 0.7),
+            ("harassment_threatening", 0.5),
+            ("violence", 0.2),
         ]
         for i, (category, score) in enumerate(scores):
             self.assertEqual((category, score), expected[i])
@@ -135,5 +134,6 @@ class TestCategories(unittest.TestCase):
         self.assertEqual(scores.harassment_threatening, 0.5)
         self.assertEqual(scores.violence, 0.2)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

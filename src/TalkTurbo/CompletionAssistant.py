@@ -1,5 +1,5 @@
 """
-The CompletionAssistant class is responsible for managing the API adapters and 
+The CompletionAssistant class is responsible for managing the API adapters and
 providing a unified interface for interacting with them.
 """
 
@@ -26,9 +26,7 @@ class CompletionAssistant:
         CompletionAssistant.INITIALIZED = True
 
     @staticmethod
-    def get_chat_completion(
-        context: ChatContext, adapter: ApiAdapter = None
-    ) -> ChatContext:
+    def get_chat_completion(context: ChatContext, adapter: ApiAdapter = None) -> ChatContext:
         """
         Get a chat completion from the adapter.
 

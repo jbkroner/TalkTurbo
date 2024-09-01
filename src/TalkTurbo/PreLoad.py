@@ -11,9 +11,7 @@ from TalkTurbo.Messages import (
 
 def _validate_pre_load_data(pre_load_data: dict):
     if not isinstance(pre_load_data["system_prompt"], str):
-        raise TypeError(
-            f"Pre-load system prompt must be a string.  Data: {pre_load_data}"
-        )
+        raise TypeError(f"Pre-load system prompt must be a string.  Data: {pre_load_data}")
 
     if not isinstance(pre_load_data["context"], list):
         raise TypeError(
@@ -22,13 +20,8 @@ def _validate_pre_load_data(pre_load_data: dict):
 
     for item in pre_load_data["context"]:
         if not isinstance(item, dict):
-            raise TypeError(
-                f"Each item in the pre-load data must be a dictionary.  Data: {item}"
-            )
-        if (
-            MessageRole.USER.value not in item
-            or MessageRole.ASSISTANT.value not in item
-        ):
+            raise TypeError(f"Each item in the pre-load data must be a dictionary.  Data: {item}")
+        if MessageRole.USER.value not in item or MessageRole.ASSISTANT.value not in item:
             raise ValueError(
                 f"Each item in the pre-load data must have a user and system message.  Data: {item}"
             )

@@ -7,9 +7,7 @@ def get_parser():
     """
     # command parser
     parser = argparse.ArgumentParser(description="Turbo")
-    parser.add_argument(
-        "--debug", action="store_true", help="Enable debug mode", dest="debug"
-    )
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode", dest="debug")
 
     parser.add_argument(
         "-s",

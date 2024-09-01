@@ -1,6 +1,6 @@
 import unittest
-from TalkTurbo.Messages import UserMessage
 
+from TalkTurbo.Messages import UserMessage
 from TalkTurbo.TurboGuild import TurboGuildMap
 
 
