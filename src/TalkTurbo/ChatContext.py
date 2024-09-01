@@ -101,7 +101,6 @@ class ChatContext:
         messages = [self.system_prompt.to_completion_dict()]
 
         if self.pre_load_data:
-            print("this")
             messages += [message.to_completion_dict() for message in self.pre_load_data]
 
         messages += [message.to_completion_dict() for message in self.messages]
