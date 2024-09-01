@@ -96,14 +96,20 @@ def on_message_helper(discord_message: discord.Message, system_message: str = No
         message = SystemMessage(content=discord_message.content)
 
     # check for content violations
+    # if so: return an assistant message, do not update the guild context with the
+    # flagged message
     if message.flagged():
-        logger.info("interaction %s - message flagged content", discord_message.id)
+        logger.info("interaction %s - message flagged for content", discord_message.id)
+        max_cat, max_score = message.get_max_category()
+        max_score_percent = f"{100 * (1 - round(max_score, 5))}%"
         return AssistantMessage(
             (
                 "_(turbos host here: you've breached the content moderation threshold."
-                "  Keep it safe and friendly please!)_"
+                f" Category: {max_cat}, Score: {max_score_percent}. yikes."
+                "  keep it safe and friendly please!)_"
             )
-        )
+        ).content
+
     logger.info(
         "guild %s :: interaction %s :: message not flagged for content. proceeding with query.",
         discord_message.guild.name,
