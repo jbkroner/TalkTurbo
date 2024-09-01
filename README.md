@@ -192,8 +192,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Thanks to the OpenAI team for their powerful language models and moderation API
 - Thanks to the Discord.py team for their excellent library
-- Thanks to all contributors who have helped shape and improve TalkTurbo
+- Shoutout to all members of the Sweat Hotel Discord server who have put TalkTurbo through its paces since day one!
 
 ---
 
-For any questions, issues, or suggestions, please open an issue on the GitHub repository or contact the project maintainers.
+For any questions, issues, or suggestions, please open an issue on the GitHub repository.
