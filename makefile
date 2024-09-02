@@ -23,10 +23,10 @@ docker-build:
 	docker build -t turbo:dev_latest .
 
 act-x86:
-	act -j pre-commit -j build
+	act -j pre-commit -j build -j bump-version
 
 act-arm:
-	act -j pre-commit -j build --container-architecture linux/arm64
+	act -j pre-commit -j build -j bump-version --container-architecture linux/arm64
 
 setup: install-dev
 	pre-commit install

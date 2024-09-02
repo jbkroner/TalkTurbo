@@ -1,10 +1,20 @@
-name: Python package
+name: Python-package
 
 on:
   push:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Type of version bump'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+        - minor
+        - patch
 
 env:
   OPENAI_SECRET_KEY: "dummy"
@@ -46,6 +56,71 @@ jobs:
         run: |
           coverage run -m pytest
           coverage report
-      - name: Build package
+
+  bump-version:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
         run: |
-          python3 -m build
+          python -m pip install --upgrade pip
+          pip install toml
+      - name: Bump version
+        id: bump_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            python .github/scripts/bump_version.py ${{ github.event.inputs.bump_type }}
+          else
+            python .github/scripts/bump_version.py minor
+          fi
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add pyproject.toml
+          git commit -m "Bump version to ${{ steps.bump_version.outputs.new_version }}" || exit 0
+          git push
+      - name: Create Git tag
+        run: |
+          git tag v${{ steps.bump_version.outputs.new_version }}
+          git push --tags
+
+  deploy:
+    needs: bump-version
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    environment: TalkTurbo-build
+    env:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      DOCKER_REPOSITORY: talkturbo
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
+      - name: Get version
+        id: get_version
+        run: |
+          echo "version=$(grep '^version = ' pyproject.toml | cut -d '"' -f2)" >> "$GITHUB_OUTPUT"
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_REPOSITORY }}:latest
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_REPOSITORY }}:${{ steps.get_version.outputs.version }}
