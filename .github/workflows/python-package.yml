@@ -124,5 +124,5 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_REPOSITORY }}:latest
-            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_REPOSITORY }}:${{ steps.get_version.outputs.version }}
+            jbkroner/talkturbo:latest
+            jbkroner/talkturbo:${{ steps.get_version.outputs.version }}
