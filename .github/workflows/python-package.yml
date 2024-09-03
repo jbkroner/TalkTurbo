@@ -13,13 +13,29 @@ on:
         default: 'minor'
         type: choice
         options:
-        - minor
-        - patch
+          - minor
+          - patch
 
 env:
   OPENAI_SECRET_KEY: "dummy"
 
 jobs:
+  check-author:
+    runs-on: ubuntu-latest
+    outputs:
+      is_bot: ${{ steps.check_bot_author.outputs.is_bot }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check if author is bot
+        id: check_bot_author
+        run: |
+          AUTHOR=$(git log -1 --pretty=format:'%an')
+          if [ "$AUTHOR" == "github-actions[bot]" ]; then
+            echo "is_bot=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_bot=false" >> $GITHUB_OUTPUT
+          fi
+
   pre-commit:
     runs-on: ubuntu-latest
     steps:
@@ -57,11 +73,15 @@ jobs:
           coverage run -m pytest
           coverage report
 
-  bump-version:
-    needs: build
+  bump-version-and-deploy:
+    needs: [check-author, build]
+    if: needs.check-author.outputs.is_bot != 'true' && (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     environment: TalkTurbo-build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    env:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      DOCKER_REPOSITORY: talkturbo
     steps:
       - uses: actions/checkout@v3
         with:
@@ -94,18 +114,6 @@ jobs:
         run: |
           git tag v${{ steps.bump_version.outputs.new_version }}
           git push --tags
-
-  deploy:
-    needs: bump-version
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-    environment: TalkTurbo-build
-    env:
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      DOCKER_REPOSITORY: talkturbo
-    steps:
-      - uses: actions/checkout@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to DockerHub
@@ -113,10 +121,6 @@ jobs:
         with:
           username: ${{ env.DOCKER_USERNAME }}
           password: ${{ env.DOCKER_PASSWORD }}
-      - name: Get version
-        id: get_version
-        run: |
-          echo "version=$(grep '^version = ' pyproject.toml | cut -d '"' -f2)" >> "$GITHUB_OUTPUT"
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
@@ -125,4 +129,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             jbkroner/talkturbo:latest
-            jbkroner/talkturbo:${{ steps.get_version.outputs.version }}
+            jbkroner/talkturbo:${{ steps.bump_version.outputs.new_version }}
