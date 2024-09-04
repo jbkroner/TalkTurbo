@@ -10,6 +10,8 @@ Once TalkTurbo is added to your server, you can talk to the bot by @mentioning i
   - [Setup](#setup)
   - [Usage](#usage)
   - [Run with Docker](#run-with-docker)
+    - [Pull from Docker Hub](#pull-from-docker-hub)
+    - [Build Locally](#build-locally)
   - [Command Line Arguments](#command-line-arguments)
   - [Slash Commands](#slash-commands)
   - [Context Tracking](#context-tracking)
@@ -19,6 +21,7 @@ Once TalkTurbo is added to your server, you can talk to the bot by @mentioning i
   - [Running GitHub Actions Locally](#running-github-actions-locally)
     - [Installing Act](#installing-act)
     - [Running Actions](#running-actions)
+  - [Release Process](#release-process)
   - [Contributing](#contributing)
   - [License](#license)
   - [Acknowledgments](#acknowledgments)
@@ -58,19 +61,43 @@ Run the bot:
 - Windows: `python ./src/TurboTalk/turbo.py`
 - Linux / macOS: `python3 ./src/TurboTalk/turbo.py`
 
+
 ## Run with Docker
 
-The Docker image is not currently distributed on Docker Hub, but it's easy to build locally:
+You can run TalkTurbo using Docker either by pulling the pre-built image from Docker Hub or by building the image locally.
 
-1. Build the container:
-   ```
-   make docker-build
+### Pull from Docker Hub
+
+To pull and run the latest version of TalkTurbo from Docker Hub:
+
+```bash
+docker pull jbkroner/talkturbo:latest
+docker run -d --env-file .env jbkroner/talkturbo:latest
+```
+
+Replace `latest` with a specific version tag if you need a particular version.
+
+### Build Locally
+
+To build the Docker image locally:
+
+1. Clone the repository and navigate to the project directory:
+   ```bash
+   git clone https://github.com/jbkroner/TalkTurbo.git
+   cd TalkTurbo
    ```
 
-2. Run the container:
+2. Build the container:
+   ```bash
+   docker build -t talkturbo:local .
    ```
-   docker run -d --env-file .env turbo:dev_latest
+
+3. Run the container:
+   ```bash
+   docker run -d --env-file .env talkturbo:local
    ```
+
+Make sure your `.env` file is in the current directory and contains the necessary environment variables (`DISCORD_SECRET_KEY` and `OPENAI_SECRET_KEY`).
 
 ## Command Line Arguments
 
@@ -175,6 +202,10 @@ For ARM architecture:
 ```
 make act-arm
 ```
+
+## Release Process
+
+TalkTurbo uses an automated release process for version management. Minor version bumps are automatically triggered when changes are pushed to the main branch. The system will update the version in pyproject.toml, create a new git tag, and build and push a new Docker image with the updated version tag. No manual intervention is required for standard releases.
 
 These commands will run the pre-commit job defined in your GitHub Actions workflow file using your local environment.
 
