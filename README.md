@@ -113,7 +113,7 @@ Make sure your `.env` file is in the current directory and contains the necessar
 - `/estop`: Shut down the bot (use at your discretion for spam, abuse, or other problems)
 - `/list_models`: List available models
 - `/list_current_model`: Show the model TalkTurbo is currently using
-- `/set_model`: Set the model that TalkTurbo will use
+- `/set_model`: Set the model that TalkTurbo will use (defaults to `4o-mini`)
 
 ## Context Tracking
 
@@ -123,7 +123,7 @@ TalkTurbo tracks conversation context to maintain topic relevance. Key points:
 - Newest messages are kept, oldest are removed when limit is reached
 - Messages older than 24 hours are dropped
 - System prompt is never removed from context
-- Context limit can be increased up to 4096 tokens for `gpt-3.5-turbo` (note: this will increase API usage and costs)
+- Context limit can be increased up to 4096 tokens
 
 ## Moderation
 
